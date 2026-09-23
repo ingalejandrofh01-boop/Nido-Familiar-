@@ -73,9 +73,17 @@ export function seedDemo() {
         m5: { giverId: 'm5', receiverId: 'm1' }, m2: { giverId: 'm2', receiverId: 'm4' }
       },
       'exchanges/x1/wishes': {
-        w1: { memberId: 'm4', text: 'Audífonos inalámbricos', link: '' }, w2: { memberId: 'm4', text: 'Libro de Harry Potter', link: '' },
-        w3: { memberId: 'm5', text: 'LEGO de Star Wars', link: '' }, w4: { memberId: 'm2', text: 'Una planta bonita 🌿', link: '' },
-        w5: { memberId: 'm6', text: 'Pantuflas calientitas', link: '' }
+        w1: { memberId: 'm4', text: 'Audífonos inalámbricos con cancelación de ruido', link: 'https://www.amazon.com.mx/', store: 'Amazon', storeIcon: '📦', price: 1299, priority: 3, note: 'Color blanco o lila 💜' },
+        w2: { memberId: 'm4', text: 'Libro de Harry Potter (edición ilustrada)', link: 'https://www.gandhi.com.mx/', store: 'Gandhi', storeIcon: '📚', price: 650, priority: 2 },
+        w3: { memberId: 'm5', text: 'LEGO de Star Wars', link: 'https://www.liverpool.com.mx/', store: 'Liverpool', storeIcon: '🛍️', price: 899, priority: 3, note: 'El de la nave de Mandalorian' },
+        w4: { memberId: 'm2', text: 'Una planta bonita 🌿', priority: 2, note: 'Que no necesite mucho sol' },
+        w5: { memberId: 'm6', text: 'Pantuflas calientitas', link: 'https://www.mercadolibre.com.mx/', store: 'Mercado Libre', storeIcon: '🤝', price: 350, priority: 1, note: 'Talla 24' },
+        w6: { memberId: 'm1', text: 'Termo para café', priority: 2, price: 450 }
+      },
+      'exchanges/x1/claims': {
+        w1: { wishId: 'w1', ownerId: 'm4', ownerUid: '', by: 'm2', at: now - 86400000, bought: false },
+        w3: { wishId: 'w3', ownerId: 'm5', ownerUid: '', by: 'm1', at: now - 3600000, bought: true },
+        w6: { wishId: 'w6', ownerId: 'm1', ownerUid: 'demo-user', by: 'm3', at: now - 3600000, bought: false }
       },
       'exchanges/x2/anon': { m5: { toId: 'm1', msgs: [{ by: 'giver', text: '¿Te gustan más los dulces o los chocolates? 🍫', at: now - 5400000 }] } },
       'exchanges/x2/wishes': { w1: { memberId: 'm5', text: 'Disfraz de dinosaurio', link: '' }, w2: { memberId: 'm1', text: 'Chocolates amargos', link: '' } },
@@ -121,6 +129,9 @@ export function seedDemo() {
         i6: { item: 'Pasaportes', place: 'Caja fuerte del clóset', area: 'Documentos', emoji: '🛂' }
       },
       recipes: {
+        r4: { title: 'Tacos de bistec', emoji: '🌮', category: 'cena', author: 'Roberto', time: '30 min', servings: '6 personas', by: 'm3', favs: ['m4', 'm5'], cooked: [], ingredients: ['1 kg de bistec de res', 'Tortillas de maíz', '1 cebolla', 'Cilantro', 'Limones', 'Salsa verde'], steps: ['Pica la carne y sazónala con sal y pimienta.', 'Ásala en el comal bien caliente.', 'Sirve en tortillas con cebolla, cilantro y salsa.'] },
+        r5: { title: 'Sopa de fideo', emoji: '🍜', category: 'comida', author: 'Abuela Rosa', time: '25 min', servings: '6 personas', by: 'm6', favs: ['m5'], cooked: [], ingredients: ['1 paquete de fideo', '3 jitomates', '1/4 de cebolla', '1 diente de ajo', 'Consomé de pollo', 'Aceite'], steps: ['Dora el fideo en aceite.', 'Licúa jitomate, cebolla y ajo; cuélalo y agrégalo.', 'Añade agua y consomé; hierve 10 minutos.'] },
+        r6: { title: 'Chilaquiles verdes', emoji: '🍳', category: 'desayuno', author: 'Laura', time: '20 min', servings: '4 personas', by: 'm2', favs: ['m1'], cooked: [], ingredients: ['Totopos', 'Salsa verde', 'Crema', 'Queso fresco', 'Cebolla', '2 huevos'], steps: ['Calienta la salsa.', 'Agrega los totopos y mezcla.', 'Sirve con crema, queso, cebolla y huevo.'] },
         r1: { title: 'Mole de la abuela Rosa', emoji: '🍗', category: 'comida', author: 'Abuela Rosa', time: '3 horas', servings: '10 personas', by: 'm6', favs: ['m1', 'm2', 'm4'], cooked: [{ by: 'm2', date: iso(plus(-40)) }],
           ingredients: ['1 pollo en piezas', '4 chiles mulatos', '3 chiles anchos', '2 chiles pasilla', '1 tablilla de chocolate de mesa', '1/2 bolillo dorado', '2 cdas de ajonjolí', 'Canela, clavo y pimienta', 'Sal al gusto'],
           steps: ['Cuece el pollo con cebolla, ajo y sal. Guarda el caldo.', 'Desvena y tuesta los chiles sin quemarlos; remójalos en agua caliente.', 'Fríe el pan, el ajonjolí y las especias.', 'Licúa todo con los chiles y un poco de caldo.', 'Fríe la salsa en una cazuela y agrega el chocolate.', 'Deja hervir a fuego bajo 40 minutos moviendo seguido.', 'Agrega el pollo y sirve con arroz y ajonjolí encima.'], notes: 'El secreto es tostar los chiles apenas unos segundos y mover el mole con cuchara de madera ❤️' },
@@ -194,6 +205,54 @@ export function seedDemo() {
         nt1: { to: 'all', title: 'Nuevo evento: Viaje a Valle de Bravo', body: 'Toda la familia · en 10 días', icon: '✈️', link: 'agenda', from: 'm2', createdAt: now - 3600000 },
         nt2: { to: ['m1'], title: 'Te asignaron: Sacar la basura', body: '+10 puntos', icon: '🧹', link: 'tareas', from: 'm3', createdAt: now - 7200000 },
         nt3: { to: 'all', title: 'Laura subió 3 fotos', body: 'Navidad pasada', icon: '📸', link: 'fotos', from: 'm2', createdAt: now - 86400000 }
+      },
+      pets: {
+        cheto: {
+          name: 'Cheto', type: 'gato', breed: 'Naranja atigrado', sex: 'm', birthday: `2021-${md(plus(12))}`, neutered: 'si', chip: 'Placa azul con teléfono',
+          likes: 'Dormir en la ropa limpia, las cajas y el atún', dislikes: 'La aspiradora y el baño', notes: 'Se esconde bajo la cama cuando hay visitas. Le cae mal la leche.',
+          avatar: { species: 'gato', fur: '#ec7a32', sec: '#fff4e6', extra: '#b8621e', pattern: 'rayas', eyes: 'brillantes', eyeColor: '#d4a017', brows: 'ninguna', mouth: 'gatuna', blush: true, blushColor: '#ffb4a2', head: 'ninguno', face: 'ninguno', neck: 'collar', acc: '#3a86ff', bg: ['#fff3b0', '#ffd166'], anim: 'orejas', seasonal: true, lashes: false },
+          avatarMode: 'avatar', photo: '',
+          routines: [
+            { id: 'r1', emoji: '🍽️', title: 'Darle de comer', times: 2, who: ['m4', 'm5'] },
+            { id: 'r2', emoji: '💧', title: 'Agua fresca', times: 1, who: [] },
+            { id: 'r3', emoji: '🧹', title: 'Limpiar arenero', times: 1, who: ['m1', 'm4', 'm3'] },
+            { id: 'r4', emoji: '🧶', title: 'Jugar 15 min', times: 1, who: ['m5'] }
+          ],
+          log: { [iso(plus(0))]: { r1: [{ by: 'm2', at: now - 5 * 3600000 }], r2: [{ by: 'm5', at: now - 4 * 3600000 }] } },
+          vaccines: [
+            { name: 'Triple felina', date: iso(plus(-345)), next: iso(plus(20)), kind: 'vacuna' },
+            { name: 'Rabia', date: iso(plus(-200)), next: iso(plus(165)), kind: 'vacuna' },
+            { name: 'Desparasitación interna', date: iso(plus(-82)), next: iso(plus(8)), kind: 'desparasitacion' }
+          ],
+          vet: { name: 'Dra. Mariana Pérez', clinic: 'Clínica Veterinaria Patitas', phone: '5555123456', emergency: '5555987654', address: 'Av. Coyoacán 123' },
+          food: { brand: 'Croqueta para gato adulto sabor salmón', bagKg: 3, dailyG: 60, boughtAt: iso(plus(-44)) },
+          weightLog: [{ date: iso(plus(-300)), kg: 4.1 }, { date: iso(plus(-210)), kg: 4.5 }, { date: iso(plus(-120)), kg: 4.9 }, { date: iso(plus(-40)), kg: 5.2 }, { date: iso(plus(-5)), kg: 5.1 }]
+        }
+      },
+      menus: (() => { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); const day = (k) => { const x = new Date(d); x.setDate(x.getDate() + k); return iso(x); };
+        return { [iso(d)]: { meals: ['comida', 'cena'], days: {
+          [day(0)]: { comida: { recipeId: 'r5', text: '', cook: 'm6' }, cena: { recipeId: 'r4', text: '', cook: 'm3' } },
+          [day(1)]: { comida: { recipeId: 'r1', text: '', cook: 'm2' }, cena: { recipeId: '', text: '🥡 Sobras', cook: '' } },
+          [day(2)]: { comida: { recipeId: 'r5', text: '', cook: 'm2' }, cena: { recipeId: 'r6', text: '', cook: 'm1' } },
+          [day(3)]: { comida: { recipeId: '', text: 'Enchiladas suizas', cook: 'm2' } },
+          [day(5)]: { comida: { recipeId: 'r2', text: '', cook: 'm6' }, cena: { recipeId: '', text: '🍕 Comemos fuera', cook: '' } }
+        } } }; })(),
+      parties: {
+        pa1: { title: 'Carne asada por el cumple de Luis', type: 'carne', emoji: '🔥', date: iso(plus(19)), time: '14:00', place: 'Casa de los Fernández', address: 'Av. Coyoacán 123, CDMX', host: 'm2', notes: 'Traigan traje de baño, hay alberca inflable 💦', by: 'm2',
+          rsvp: { m2: { s: 'si', n: 1 }, m3: { s: 'si', n: 1 }, m6: { s: 'si', n: 2 }, m4: { s: 'quiza', n: 1 } },
+          items: [{ id: 'i1', name: 'Carne', qty: '3 kg', by: 'm3', done: true }, { id: 'i2', name: 'Carbón', qty: '1 bolsa', by: 'm3', done: false }, { id: 'i3', name: 'Tortillas', qty: '2 kg', by: '', done: false }, { id: 'i4', name: 'Guacamole', qty: '', by: 'm6', done: false }, { id: 'i5', name: 'Pastel', qty: '', by: 'm2', done: false }, { id: 'i6', name: 'Refrescos', qty: '', by: '', done: false }, { id: 'i7', name: 'Hielo', qty: '2 bolsas', by: '', done: false }, { id: 'i8', name: 'Piñata', qty: '', by: '', done: false }] },
+        pa2: { title: 'Posada familiar', type: 'posada', emoji: '🪅', date: `${y}-12-16`, time: '19:00', place: 'Casa de la abuela Rosa', address: 'Calle de los Pinos 45, Tlalpan, CDMX', host: 'm6', notes: 'Suéter navideño obligatorio 🎅', by: 'm6',
+          rsvp: { m6: { s: 'si', n: 1 }, m2: { s: 'si', n: 1 } },
+          items: ['Tamales', 'Ponche', 'Piñata', 'Colación y dulces', 'Velitas', 'Desechables'].map((name, i) => ({ id: 'p' + i, name, qty: '', by: i === 1 ? 'm6' : '', done: false })) }
+      },
+      wheels: {
+        wh1: { title: '¿Quién lava los trastes?', emoji: '🍽️', mode: 'members', members: [], options: [], noRepeat: true, by: 'm2' },
+        wh2: { title: '¿Qué cenamos?', emoji: '🌮', mode: 'options', members: [], options: ['Tacos', 'Pizza', 'Pozole', 'Hamburguesas', 'Tortas', 'Sushi', 'Quesadillas', 'Chilaquiles'], noRepeat: false, by: 'm1' }
+      },
+      spins: {
+        sp1: { wheelId: 'wh1', index: 3, label: 'Ana', memberId: 'm4', by: 'm2', at: now - 26 * 3600000 },
+        sp2: { wheelId: 'wh1', index: 4, label: 'Luis', memberId: 'm5', by: 'm3', at: now - 3 * 3600000 },
+        sp3: { wheelId: 'wh2', index: 0, label: 'Tacos', memberId: '', by: 'm5', at: now - 50 * 3600000 }
       },
       rewards: {
         r1: { title: 'Elegir la película del viernes', cost: 50, emoji: '🎬' },

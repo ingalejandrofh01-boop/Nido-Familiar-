@@ -48,6 +48,12 @@ export function occurrences(from, to) {
     for (let y = from.getFullYear(); y <= to.getFullYear(); y++)
       add(new Date(y, b.getMonth(), b.getDate()), { title: `Cumpleaños de ${m.name}`, type: 'cumple', member: m, virtual: true, years: y - b.getFullYear() });
   }
+  // 🐾 Mascotas: cumpleaños y próximas vacunas
+  for (const p of S.data.pets || []) {
+    if (p.birthday) { const b = parseDate(p.birthday); for (let y = from.getFullYear(); y <= to.getFullYear(); y++) { const d = new Date(y, b.getMonth(), b.getDate()); if (d > b) add(d, { title: `Cumpleaños de ${p.name} 🐾`, type: 'cumple', pet: p, virtual: true, years: y - b.getFullYear() }); } }
+    for (const v of p.vaccines || []) { const d = parseDate(v.next); if (d) add(d, { title: `${v.kind === 'desparasitacion' ? 'Desparasitar' : 'Vacuna'} de ${p.name}: ${v.name}`, type: 'recordatorio', pet: p, virtual: true }); }
+  }
+  for (const p of S.data.parties || []) { const d = parseDate(p.date); if (d) add(d, { title: p.title, type: 'fiesta', party: p, virtual: true, time: p.time }); }
   for (const x of S.data.exchanges) {
     const d = parseDate(x.date); if (d) add(d, { title: x.title, type: 'intercambio', exchange: x, virtual: true, time: x.time });
   }

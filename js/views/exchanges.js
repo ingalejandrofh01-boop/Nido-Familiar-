@@ -3,6 +3,8 @@ import { S, hooks, members, member, useSub, isAdult, notify, onCleanup } from '.
 import { esc, avatar, fmtDate, fmtTime, today0, isoDate, parseDate, modal, memberPicker, toast, money, daysBetween, confirmBox } from '../ui.js';
 import { THEMES, renderScene } from '../themes.js';
 import { startCountdowns } from './home.js';
+import { wishForm, wishCard } from '../wishes.js';
+import { REVEAL_STYLES, defaultStyle, mountReveal, soundOn, toggleSound } from '../reveal.js';
 
 const TYPES = [
   ['navidad', '🎄', 'Navideño'], ['amor', '💘', 'Amor y amistad'], ['halloween', '🎃', 'Halloween'],
@@ -13,6 +15,10 @@ const TYPES = [
 const typeInfo = (k) => TYPES.find(t => t[0] === k) || TYPES[TYPES.length - 1];
 const revealed = {}; // estado local de "caja abierta"
 const played = new Set();
+const lsGet = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const styleFor = (x) => lsGet('nido-rv-' + x.id) || defaultStyle(x.type);
+const revealName = (recv, x) => `<div class="reveal-name">${avatar(recv, 'xl')}<div class="small bold muted">Te tocó regalarle a</div><h2>${esc(recv?.name || '?')}</h2><p class="muted bold">¡Shhh! 🤫 Es un secreto${x && x.budget ? ` · Presupuesto ${money(x.budget)}` : ''}</p></div>`;
+const themeColors = (x) => { const t = THEMES[x?.type] || THEMES.clasico; return [t.accent, t.accent2, t.glow, '#fff']; };
 
 // 🎬 Animación del sorteo en vivo (todos la ven al mismo tiempo)
 function playLive(x) {
@@ -31,7 +37,7 @@ function playLive(x) {
     clearInterval(iv); el.classList.add('done'); count.textContent = '🎁'; sub.innerHTML = '¡Sorteo listo! Cada quien ya tiene a su amigo secreto';
     try { navigator.vibrate && navigator.vibrate([80, 60, 160]); } catch { }
     for (let i = 0; i < 7; i++) setTimeout(() => hooks.celebrate(innerWidth * (0.15 + Math.random() * .7), innerHeight * (0.2 + Math.random() * .4), t.tapKind === 'heart' ? 'heart' : 'spark', [t.accent, t.accent2, t.glow, '#fff']), i * 160);
-    const btn = document.createElement('button'); btn.className = 'btn primary lg mt'; btn.textContent = '🎁 Ver a quién le regalo'; btn.onclick = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); document.querySelector('.gift')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    const btn = document.createElement('button'); btn.className = 'btn primary lg mt'; btn.textContent = '🎁 Ver a quién le regalo'; btn.onclick = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); document.querySelector('.rv-slot, .reveal-name')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
     el.querySelector('.ld-inner').appendChild(btn);
   };
   const iv = setInterval(tick, 100); tick();
@@ -148,6 +154,7 @@ export const exchangeDetail = {
     const isOrg = x.createdBy === S.user.uid || S.me.role === 'admin';
     const asgs = useSub('asg-' + id, `exchanges/${id}/assignments`, (isOrg || x.status === 'revealed') ? {} : { where: ['giverUid', '==', S.user.uid] }) || [];
     const wishes = useSub('wish-' + id, `exchanges/${id}/wishes`, {}) || [];
+    const claims = useSub('claims-' + id, `exchanges/${id}/claims`, { where: ['ownerUid', '!=', S.user.uid] }) || [];
     const ps = (x.participants || []).map(member).filter(Boolean);
     const mine = asgs.find(a => a.giverId === S.me.id);
     const recv = mine ? member(mine.receiverId) : null;
@@ -156,12 +163,15 @@ export const exchangeDetail = {
     const future = target > Date.now();
 
     const wishList = (m, highlight) => {
-      const ws = wishes.filter(w => w.memberId === m.id);
+      const ws = wishes.filter(w => w.memberId === m.id).sort((a, b) => (b.priority || 2) - (a.priority || 2) || (a.createdAt || 0) - (b.createdAt || 0));
       const canEdit = m.id === S.me.id || (!m.uid && isAdult());
+      const isOwnerView = m.id === S.me.id;
+      const got = ws.filter(w => claims.some(c => c.id === w.id)).length;
       return `<div class="card pad-sm" style="${highlight ? 'box-shadow:0 0 0 2px var(--accent),var(--shadow)' : ''}">
-        <div class="row mb" style="margin-bottom:10px">${avatar(m)}<div class="grow"><div class="bold">${esc(m.name)}${highlight ? ' <span class="chip accent">🎯 Tu amigo secreto</span>' : ''}</div><div class="tiny muted">${ws.length} deseo${ws.length === 1 ? '' : 's'}</div></div>
+        <div class="row mb" style="margin-bottom:10px">${avatar(m)}<div class="grow"><div class="bold">${esc(m.name)}${highlight ? ' <span class="chip accent">🎯 Tu amigo secreto</span>' : ''}</div><div class="tiny muted">${ws.length} deseo${ws.length === 1 ? '' : 's'}${!isOwnerView && got ? ` · 🔒 ${got} apartado${got === 1 ? '' : 's'}` : ''}</div></div>
         ${canEdit ? `<button class="icon-btn" data-act="addWish" data-m="${m.id}" title="Agregar deseo">＋</button>` : ''}</div>
-        <div class="col" style="gap:6px">${ws.map(w => `<div class="wish"><span>🎁</span><div class="grow"><div class="bold small">${esc(w.text)}</div>${w.link ? `<a class="tiny link" href="${esc(w.link)}" target="_blank" rel="noopener">Ver ejemplo ↗</a>` : ''}</div>${canEdit ? `<button class="link tiny" data-act="delWish" data-id="${w.id}">✕</button>` : ''}</div>`).join('') || '<div class="tiny muted">Sin deseos todavía</div>'}</div></div>`;
+        <div class="col" style="gap:8px">${ws.map(w => wishCard(w, { canEdit, isOwnerView, claim: isOwnerView ? null : claims.find(c => c.id === w.id) })).join('') || `<div class="tiny muted">${isOwnerView ? 'Agrega lo que te gustaría con el botón ＋ (puedes pegar links de Amazon, Mercado Libre…)' : 'Sin deseos todavía'}</div>`}</div>
+        ${isOwnerView && ws.length ? '<div class="tiny muted mt-s">🤫 Tu familia puede apartar tus deseos sin que tú lo veas.</div>' : ''}</div>`;
     };
 
     // Sección central según estado
@@ -190,9 +200,9 @@ export const exchangeDetail = {
             revealed[id] ? `<div class="reveal-name">${avatar(recv, 'xl')}<div class="small bold muted">Te tocó regalarle a</div><h2>${esc(recv?.name || '?')}</h2>
               <p class="muted bold">¡Shhh! 🤫 Es un secreto${x.budget ? ` · Presupuesto ${money(x.budget)}` : ''}</p>
               <button class="btn sm mt" data-act="hide" data-id="${id}">🙈 Ocultar</button></div>`
-              : `<div class="small bold muted">Tu amigo secreto te espera…</div>
-              <div class="gift-stage"><div class="gift" data-act="open" data-id="${id}"><div class="bow"></div><div class="lid"></div><div class="box"></div><div class="ribbon-v"></div></div></div>
-              <p class="bold">👆 Toca el regalo para descubrirlo</p>`}
+              : `<div class="small bold muted">Tu amigo secreto te espera… ¿cómo lo quieres descubrir?</div>
+              <div class="rv-picker">${REVEAL_STYLES.map(([k, e, l]) => `<button class="chip chip-btn ${styleFor(x) === k ? 'accent' : ''}" data-act="rvStyle" data-id="${id}" data-s="${k}">${e} ${l}</button>`).join('')}<button class="chip chip-btn" data-act="rvSound" title="Sonido">${soundOn() ? '🔊' : '🔇'}</button></div>
+              <div class="rv-slot" id="rv-slot-${id}"></div>`}
         ${isOrg ? `<div class="divider">Organizador</div>
           <div class="small muted mb">Para quien no tiene cuenta (por ejemplo los peques), dale tu teléfono y revela aquí su resultado:</div>
           <div class="chips" style="justify-content:center">${ps.filter(p => !p.uid && p.id !== S.me.id).map(p => `<button class="chip chip-btn" data-act="revealFor" data-id="${id}" data-m="${p.id}">🎁 ${esc(p.name)}</button>`).join('') || '<span class="tiny muted">Todos tienen cuenta 👍</span>'}</div>
@@ -248,6 +258,12 @@ export const exchangeDetail = {
     }
     // Sorteo en vivo sincronizado
     if (x.liveAt && Date.now() < x.liveAt + 4000 && !played.has(id + x.liveAt)) { played.add(id + x.liveAt); playLive(x); }
+    // Escenario de revelación (se conserva aunque la pantalla se redibuje)
+    const slot = root.querySelector('#rv-slot-' + id);
+    if (slot) {
+      const mine = (S.subs['asg-' + id]?.data || []).find(a => a.giverId === S.me.id); const recv = mine && member(mine.receiverId);
+      mountReveal(slot, 'me-' + id, { style: styleFor(x), colors: themeColors(x), nameHTML: revealName(recv, x), onDone: () => { revealed[id] = true; hooks.rerender(); } });
+    }
   },
   actions: {
     edit(el) { exchangeForm(S.data.exchanges.find(e => e.id === el.dataset.id)); },
@@ -296,44 +312,39 @@ export const exchangeDetail = {
       { const x = S.data.exchanges.find(e => e.id === el.dataset.id); notify({ to: x.participants, icon: '🎊', title: `¡Gran revelación! ${x.title}`, body: 'Entra a ver quién le regaló a quién', link: 'intercambio/' + x.id }); }
       hooks.celebrate(innerWidth / 2, innerHeight / 3, 'confetti');
     },
-    open(el) {
-      const id = el.dataset.id; if (el.classList.contains('shake')) return;
-      el.classList.add('shake');
-      setTimeout(() => {
-        el.classList.remove('shake'); el.classList.add('open');
-        const r = el.getBoundingClientRect(); const x = S.data.exchanges.find(e => e.id === id); const t = THEMES[x?.type] || THEMES.clasico;
-        hooks.celebrate(r.left + r.width / 2, r.top + r.height / 3, 'confetti', [t.accent, t.accent2, t.glow, '#fff']);
-        hooks.celebrate(r.left + r.width / 2, r.top + r.height / 3, 'spark', [t.accent, t.accent2, t.glow, '#fff']);
-        setTimeout(() => { revealed[id] = true; hooks.rerender(); }, 650);
-      }, 1000);
-    },
+    rvStyle(el) { try { localStorage.setItem('nido-rv-' + el.dataset.id, el.dataset.s); } catch { } hooks.rerender(); },
+    rvSound(el) { const on = toggleSound(); el.textContent = on ? '🔊' : '🔇'; toast(on ? '🔊 Sonido activado' : '🔇 Sin sonido'); },
     hide(el) { revealed[el.dataset.id] = false; hooks.rerender(); },
     revealFor(el) {
       const id = el.dataset.id; const giver = member(el.dataset.m);
       const a = (S.subs['asg-' + id]?.data || []).find(a => a.giverId === giver.id);
       if (!a) { toast('No se encontró su resultado'); return; }
-      const recv = member(a.receiverId);
+      const recv = member(a.receiverId); const x = S.data.exchanges.find(e => e.id === id);
       const m = modal({
-        title: `🎁 Para ${esc(giver.name)}`, body: `<div class="center" id="rv"><p class="bold">${esc(giver.name)}, toca tu regalo 👇</p>
-          <div class="gift-stage"><div class="gift" id="g2"><div class="bow"></div><div class="lid"></div><div class="box"></div><div class="ribbon-v"></div></div></div></div>`, foot: `<div class="modal-foot"><button type="button" class="btn primary" data-close>Listo 🤫</button></div>`
+        title: `🎁 Para ${esc(giver.name)}`, body: `<div class="center"><p class="bold">${esc(giver.name)}, ¡descubre a tu amigo secreto! 👇</p><div id="rv2"></div></div>`, foot: `<div class="modal-foot"><button type="button" class="btn primary" data-close>Listo 🤫</button></div>`
       });
-      const g = m.el.querySelector('#g2');
-      g.onclick = () => {
-        g.classList.add('shake');
-        setTimeout(() => {
-          g.classList.add('open'); const r = g.getBoundingClientRect(); hooks.celebrate(r.left + r.width / 2, r.top + 40, 'confetti');
-          setTimeout(() => { m.el.querySelector('#rv').innerHTML = `<div class="reveal-name">${avatar(recv, 'xl')}<div class="small bold muted">Te tocó regalarle a</div><h2>${esc(recv.name)}</h2><p class="bold muted">¡No se lo digas a nadie! 🤫</p></div>`; }, 600);
-        }, 1000);
-      };
+      const slot = m.el.querySelector('#rv2');
+      mountReveal(slot, 'for-' + id + '-' + giver.id + '-' + Date.now(), { style: styleFor(x), colors: themeColors(x), nameHTML: revealName(recv, x), onDone: () => { slot.innerHTML = revealName(recv, x); } });
     },
     addWish(el) {
       const id = S.route.params[0]; const m = member(el.dataset.m);
-      modal({
-        title: `🎁 Deseo de ${esc(m.name)}`, body: `<div class="field"><label>¿Qué te gustaría?</label><input class="input" name="text" required placeholder="Audífonos, un libro, pantuflas…"></div>
-          <div class="field"><label>Link de ejemplo (opcional)</label><input class="input" name="link" type="url" placeholder="https://…"></div>`,
-        submit: async (d) => { if (!d.text.trim()) return false; await S.db.add(`exchanges/${id}/wishes`, { memberId: m.id, text: d.text.trim(), link: d.link || '' }); toast('🎁 Deseo agregado'); }
-      });
+      wishForm({ member: m, save: (data) => S.db.add(`exchanges/${id}/wishes`, data) });
     },
+    editWish(el) {
+      const id = S.route.params[0]; const w = (S.subs['wish-' + id]?.data || []).find(x => x.id === el.dataset.id); if (!w) return;
+      wishForm({ member: member(w.memberId), wish: w, save: (data) => S.db.update(`exchanges/${id}/wishes`, w.id, data), remove: () => S.db.remove(`exchanges/${id}/wishes`, w.id) });
+    },
+    async claimWish(el) {
+      const id = S.route.params[0]; const w = (S.subs['wish-' + id]?.data || []).find(x => x.id === el.dataset.id); if (!w) return;
+      await S.db.set(`exchanges/${id}/claims`, w.id, { wishId: w.id, ownerId: w.memberId, ownerUid: member(w.memberId)?.uid || '', by: S.me.id, at: Date.now(), bought: false });
+      try { navigator.vibrate && navigator.vibrate(25); } catch { }
+      toast(`🔒 Apartado. ${member(w.memberId)?.name || ''} no lo verá 🤫`);
+    },
+    async boughtWish(el) {
+      const id = S.route.params[0]; const c = (S.subs['claims-' + id]?.data || []).find(x => x.id === el.dataset.id); if (!c) return;
+      await S.db.update(`exchanges/${id}/claims`, c.id, { bought: !c.bought }); if (!c.bought) toast('🛍️ ¡Listo! Ya nomás falta envolverlo 🎀');
+    },
+    async releaseWish(el) { await S.db.remove(`exchanges/${S.route.params[0]}/claims`, el.dataset.id); toast('Lo soltaste, alguien más puede apartarlo'); },
     async delWish(el) { await S.db.remove(`exchanges/${S.route.params[0]}/wishes`, el.dataset.id); }
   }
 };

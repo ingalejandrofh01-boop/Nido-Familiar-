@@ -57,6 +57,14 @@ Para no requerir el plan de pago de Firebase Storage, las fotos se **comprimen e
 | 💬 Chat | Mensajes, **avisos fijados**, "llegué a casa", compartir ubicación |
 | 📝 Notas / 🔎 ¿Dónde está? | Wi-Fi, contactos, seguros (con notas ocultas), e inventario de dónde se guardan las cosas |
 | 🐾 Avatares | Creador de avatar animado con volumen y sombreado 3D: 29 animalitos (gato, perro, zorro, conejo, oso, panda, koala, león, tigre, pingüino, búho, rana, cerdito, ratón, unicornio, lobo, mapache, ardilla, elefante, jirafa, chango, vaca, borrego, pollito, dragón, ajolote, jaguar, perezoso, llama), pestañas, colores de pelaje/detalles/marcas (o cualquier color), patrones, 8 tipos de ojos y su color, cejas, 7 expresiones, chapitas, 14 sombreros, 7 lentes/maquillajes, 7 accesorios de cuello, fondos y 7 animaciones. En cada temporada se ponen solos su accesorio (gorro navideño, sombrero de bruja, flores de Muertos…) y el día de su cumpleaños ¡llevan corona! |
+| 🎄 Formas de revelar | Cada quien elige cómo descubre a su amigo secreto: abrir un regalo, romper una esfera navideña, pegarle a una piñata, rascar un boleto dorado o abrir una carta con sello; con sonido y vibración |
+| 🛍️ Deseos inteligentes | Pega un link de Amazon, Mercado Libre, Liverpool… y se trae la foto y el nombre; precio, prioridad (❤️ a ❤️❤️❤️) y detalles como talla o color. **Apartar en secreto**: todos ven qué ya está apartado, menos el festejado |
+| 🐾 Mascotas | Perfil con avatar animado (o foto), cuidados del día por turnos, vacunas y desparasitación con avisos, veterinario con llamada/WhatsApp, comida que avisa antes de acabarse, historial de peso y cumpleaños en la agenda |
+| ☁️ Sincronización | Indicador de "Todo guardado", "Guardando…" o "Sin conexión · N cambios esperando"; sin internet todo sigue funcionando y se sube solo al volver la señal |
+| 🎉 Fiestas y posadas | Confirmación (voy / tal vez / no) con cuántos van, "¿quién trae qué?" con lista típica según la fiesta (posada, carne asada, cena de Navidad…), ubicación con Maps y Waze, invitación por WhatsApp, cuenta regresiva; aparece en la agenda y en Inicio |
+| 🎡 Ruleta familiar | "¿Quién lava los trastes?", "¿Qué cenamos?"… con integrantes u opciones; el giro se ve en vivo en todos los teléfonos, no repite al último si quieres y queda anotado con conteo |
+| 🍽️ Menú semanal | Comida, cena (y desayuno) de cada día con quién cocina; sugiere platillos del recetario y arma la lista del súper con los ingredientes |
+| 💾 Respaldo | En Ajustes: descarga un .zip con las fotos por capítulo, las recetas en texto y todos los datos; el administrador puede restaurarlo |
 | 💌 Amigo secreto | Mensajes anónimos: el que regala pregunta pistas sin revelar quién es |
 | 🍲 Recetario | Recetas con foto y autor, modo cocina paso a paso (pantalla encendida), favoritas, ingredientes directo a la lista de compras |
 | ⏳ Cápsula del tiempo | Cartas y fotos que sólo se abren en su fecha, con animación y aviso ese día |

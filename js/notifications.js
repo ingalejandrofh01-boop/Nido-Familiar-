@@ -1,6 +1,6 @@
 // 🔔 Centro de notificaciones: campanita, banners en tiempo real, avisos del sistema y recordatorios del día
 import { S, hooks, member } from './store.js';
-import { esc, avatar, timeAgo, today0, isoDate, nextBirthday, fmtTime, toast } from './ui.js';
+import { esc, avatar, timeAgo, today0, isoDate, nextBirthday, fmtTime, toast, parseDate } from './ui.js';
 import { occurrences } from './events.js';
 
 const bootTime = Date.now();
@@ -68,6 +68,9 @@ export function todayItems() {
     else if (nb.days === 1) items.push({ key: `bd1-${m.id}-${tIso}`, icon: '🎁', title: `Mañana cumple ${m.name}`, body: '¿Ya tienes su regalo?', link: 'perfil/' + m.id });
   }
   for (const o of occurrences(t0, t0)) {
+    if (o.type === 'cumple' && o.pet) { items.push({ key: `pbd-${o.pet.id}-${tIso}`, icon: '🐾', title: `¡Hoy cumple ${o.pet.name}!`, body: `${o.years ? o.years + ' año' + (o.years > 1 ? 's' : '') + ' · ' : ''}dale un premio 🎂`, link: 'mascota/' + o.pet.id }); continue; }
+    if (o.party) { items.push({ key: `pty-${o.party.id}-${tIso}`, icon: o.party.emoji || '🎉', title: `¡Hoy es ${o.party.title}!`, body: `${o.time ? fmtTime(o.time) + ' · ' : ''}${o.party.place || ''}`, link: 'fiesta/' + o.party.id }); continue; }
+    if (o.pet) { items.push({ key: `pv-${o.pet.id}-${o.title}-${tIso}`, icon: '💉', title: `Hoy: ${o.title}`, body: 'Llévalo al veterinario', link: 'mascota/' + o.pet.id }); continue; }
     if (o.type === 'cumple') continue;
     const ps = o.ev?.participants || [];
     if (o.ev && ps.length && !ps.includes(S.me.id)) continue;
@@ -75,6 +78,11 @@ export function todayItems() {
   }
   for (const c of S.data.capsules || []) {
     if (c.openAt === tIso && (c.to === 'all' || (c.to || []).includes(S.me.id))) items.push({ key: `cap-${c.id}`, icon: '⏳', title: `¡Hoy se abre una cápsula del tiempo!`, body: c.title, link: 'capsula' });
+  }
+  for (const p of S.data.pets || []) {
+    const f = p.food; if (f && f.bagKg && f.dailyG && f.boughtAt) { const left = Math.round(f.bagKg * 1000 / f.dailyG - (t0 - parseDate(f.boughtAt)) / 864e5); if (left <= 3) items.push({ key: `pf-${p.id}-${f.boughtAt}-${left <= 0 ? 0 : 3}`, icon: '🍖', title: left <= 0 ? `¡Se acabó la comida de ${p.name}!` : `A ${p.name} le quedan ${left} día${left > 1 ? 's' : ''} de comida`, body: 'Agrégala a la lista de compras', link: 'mascota/' + p.id }); }
+    const overdue = (p.vaccines || []).filter(v => v.next && v.next < tIso);
+    if (overdue.length) items.push({ key: `pvo-${p.id}-${overdue.map(v => v.next).join()}`, icon: '💉', title: `${p.name} tiene ${overdue.length === 1 ? 'una vacuna vencida' : overdue.length + ' vacunas vencidas'}`, body: overdue.map(v => v.name).join(', '), link: 'mascota/' + p.id });
   }
   const chores = S.data.chores.filter(c => c.assignee === S.me.id && !c.done && (c.due || tIso) <= tIso);
   if (chores.length) items.push({ key: `ch-${tIso}-${chores.length}`, icon: '🧹', title: `Tienes ${chores.length} tarea${chores.length > 1 ? 's' : ''} para hoy`, body: chores.map(c => c.title).slice(0, 3).join(', '), link: 'tareas' });

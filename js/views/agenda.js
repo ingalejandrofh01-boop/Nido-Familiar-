@@ -55,7 +55,7 @@ export default {
       const d = new Date(start); d.setDate(start.getDate() + i); const k = isoDate(d);
       const evs = (byDay[k] || []).filter(o => o.ev?.repeat !== 'daily');
       cells += `<div class="day ${d.getMonth() !== cursor.getMonth() ? 'out' : ''} ${k === todayIso ? 'today' : ''} ${k === selected ? 'sel' : ''}" data-act="pick" data-d="${k}">
-        <span class="n">${d.getDate()}</span><div class="evs">${evs.slice(0, 3).map(o => `<span class="ev ${o.type}" style="--c:${(EVENT_TYPES[o.type] || EVENT_TYPES.familiar).c}" title="${esc(o.title)}"><i class="e">${(EVENT_TYPES[o.type] || {}).e || ''}</i> ${esc(o.type === 'cumple' && o.member ? String(o.member.name || '').split(' ')[0] : o.title)}</span>`).join('')}${evs.length > 3 ? `<span class="tiny muted">+${evs.length - 3}</span>` : ''}</div></div>`;
+        <span class="n">${d.getDate()}</span><div class="evs">${evs.slice(0, 3).map(o => `<span class="ev ${o.type}" style="--c:${(EVENT_TYPES[o.type] || EVENT_TYPES.familiar).c}" title="${esc(o.title)}"><i class="e">${(EVENT_TYPES[o.type] || {}).e || ''}</i> ${esc(o.type === 'cumple' && (o.member || o.pet) ? String((o.member || o.pet).name || '').split(' ')[0] + (o.pet ? ' 🐾' : '') : o.title)}</span>`).join('')}${evs.length > 3 ? `<span class="tiny muted">+${evs.length - 3}</span>` : ''}</div></div>`;
     }
     const dayList = (byDay[selected] || []);
     const horizon = new Date(t0); horizon.setDate(horizon.getDate() + 60);
@@ -64,7 +64,7 @@ export default {
     const row = (o) => {
       const T = EVENT_TYPES[o.type] || EVENT_TYPES.familiar;
       const people = (o.ev?.participants || (o.member ? [o.member.id] : [])).map(member).filter(Boolean);
-      const attrs = o.ev ? `data-act="edit" data-id="${o.ev.id}"` : o.exchange ? `onclick="location.hash='#/intercambio/${o.exchange.id}'"` : o.member ? `onclick="location.hash='#/perfil/${o.member.id}'"` : '';
+      const attrs = o.ev ? `data-act="edit" data-id="${o.ev.id}"` : o.exchange ? `onclick="location.hash='#/intercambio/${o.exchange.id}'"` : o.member ? `onclick="location.hash='#/perfil/${o.member.id}'"` : o.pet ? `onclick="location.hash='#/mascota/${o.pet.id}'"` : o.party ? `onclick="location.hash='#/fiesta/${o.party.id}'"` : '';
       return `<div class="item clickable" ${attrs}><span class="ev-dot" style="--c:${T.c}"></span><span class="emoji">${T.e}</span>
         <div class="grow"><div class="bold ellipsis">${o.ev?._private ? '🔒 ' : ''}${esc(o.title)}${o.years && (o.type === 'cumple' || o.type === 'aniversario') ? ` · ${o.years} ${o.type === 'cumple' ? 'años' : 'aniversario'}` : ''}</div>
         <div class="small muted">${o.time ? fmtTime(o.time) : 'Todo el día'}${o.ev?.repeat && o.ev.repeat !== 'none' ? ' · 🔁 ' + REPEATS[o.ev.repeat] : ''}${o.ev?.location ? ' · 📍 ' + esc(o.ev.location) : ''}</div></div>
@@ -84,10 +84,10 @@ export default {
         <section class="card deco"><div class="card-title"><h3>${relDay(selected) === 'Hoy' ? 'Hoy' : fmtDate(selected, { weekday: true })}</h3><button class="link" data-act="new">＋ Agregar</button></div>
           <div class="list">${dayList.length ? dayList.map(row).join('') : '<div class="empty"><div class="big">🗓️</div>Día libre</div>'}</div></section>
         <section class="card deco"><div class="card-title"><h3>⭐ Fechas importantes</h3></div>
-          <div class="list">${important.map(o => `<div class="item clickable" ${o.ev ? `data-act="edit" data-id="${o.ev.id}"` : o.exchange ? `onclick="location.hash='#/intercambio/${o.exchange.id}'"` : `onclick="location.hash='#/perfil/${o.member.id}'"`}><span class="emoji">${EVENT_TYPES[o.type].e}</span><div class="grow"><div class="bold ellipsis">${esc(o.title)}</div><div class="small muted">${fmtDate(o.date, { weekday: true })}</div></div><span class="chip">${relDay(o.date)}</span></div>`).join('')}</div></section>
+          <div class="list">${important.map(o => `<div class="item clickable" ${o.ev ? `data-act="edit" data-id="${o.ev.id}"` : o.exchange ? `onclick="location.hash='#/intercambio/${o.exchange.id}'"` : o.pet ? `onclick="location.hash='#/mascota/${o.pet.id}'"` : o.party ? `onclick="location.hash='#/fiesta/${o.party.id}'"` : `onclick="location.hash='#/perfil/${o.member?.id}'"`}><span class="emoji">${EVENT_TYPES[o.type].e}</span><div class="grow"><div class="bold ellipsis">${esc(o.title)}</div><div class="small muted">${fmtDate(o.date, { weekday: true })}</div></div><span class="chip">${relDay(o.date)}</span></div>`).join('')}</div></section>
       </div>
     </div>
-    <style>@media(max-width:900px){#agenda-grid{grid-template-columns:1fr!important}}</style>`;
+    <style>@media(max-width:900px){#agenda-grid{grid-template-columns:minmax(0,1fr)!important}}</style>`;
   },
   actions: {
     pick(el) { selected = el.dataset.d; hooks.rerender(); },

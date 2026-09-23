@@ -78,6 +78,13 @@ service cloud.firestore {
       match /exchanges/{eid}/wishes/{wid} {
         allow read, write: if isMember(fid);
       }
+      // 🔒 Regalos apartados: todos los ven MENOS el festejado (dueño del deseo)
+      match /exchanges/{eid}/claims/{wid} {
+        function ownerUidOf(w) { return get(/databases/$(database)/documents/families/$(fid)/members/$(get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)/wishes/$(w)).data.memberId)).data.get('uid', ''); }
+        allow read: if isMember(fid) && resource.data.ownerUid != request.auth.uid;
+        allow create, update: if isMember(fid) && request.resource.data.ownerUid != request.auth.uid && request.resource.data.ownerUid == ownerUidOf(wid);
+        allow delete: if isMember(fid) && resource.data.ownerUid != request.auth.uid;
+      }
       // Sorteo secreto: cada quien sólo puede leer SU resultado.
       // El organizador (o admin) lo crea; tras "Revelar a todos", todos lo ven.
       match /exchanges/{eid}/assignments/{aid} {

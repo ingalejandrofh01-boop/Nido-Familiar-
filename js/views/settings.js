@@ -4,6 +4,7 @@ import { esc, modal, toast, compressImage, pickFiles, confirmBox } from '../ui.j
 import { THEMES, renderScene, seasonFor } from '../themes.js';
 import { setIntensity } from '../fx.js';
 import { askPermission } from '../notifications.js';
+import { createBackup, readBackupFile, restoreBackup, backupSummary } from '../backup.js';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { } };
@@ -63,9 +64,33 @@ export default {
           <div class="item"><span class="emoji">📧</span><div class="grow"><div class="bold">${esc(S.me?.name || '')}</div><div class="tiny muted">${esc(S.user?.email || '')}</div></div></div>
           <div class="row wrap mt"><a class="btn primary" href="#/avatar/${S.me?.id}">🐾 Mi avatar</a><a class="btn" href="#/perfil/${S.me?.id}">Mi perfil</a>${S.isDemo ? '<button class="btn" data-act="resetDemo">↺ Reiniciar demo</button>' : ''}<button class="btn danger" data-act="logout">Cerrar sesión</button></div></section>
       </div>
+      <section class="card deco mt"><div class="card-title"><h3>💾 Respaldo de la familia</h3></div>
+        <p class="small muted bold">Descarga un <b>.zip</b> con todo: fotos del libro (por capítulo), recetas en texto y los datos de la app para restaurarlos si algún día hace falta. Guárdalo en tu compu, Drive o iCloud.</p>
+        <div class="row wrap mt" style="gap:8px"><label class="chip chip-btn"><input type="checkbox" id="bk-full" checked> 📸 Fotos en alta calidad</label><label class="chip chip-btn"><input type="checkbox" id="bk-priv" checked> 🔒 Incluir mis datos privados</label></div>
+        <div class="row wrap mt" style="gap:8px"><button class="btn primary" data-act="backup">⬇️ Descargar respaldo</button>${isAdmin() ? '<button class="btn" data-act="restore">♻️ Restaurar un respaldo</button>' : ''}<span class="small bold muted" id="bk-status"></span></div>
+        <p class="tiny muted mt-s">${lsGet('nido-last-backup') ? `Último respaldo desde este dispositivo: ${new Date(+lsGet('nido-last-backup')).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })}` : 'Aún no has descargado un respaldo desde este dispositivo.'}</p></section>
       <p class="center tiny faint mt">Nido · hecho con ❤️ para la familia ${S.isDemo ? '· modo demo' : '· conectado a Firebase'}</p>`;
   },
   actions: {
+    async backup(el) {
+      const st = document.getElementById('bk-status'); el.disabled = true;
+      try {
+        const r = await createBackup({ fullPhotos: document.getElementById('bk-full')?.checked, includePrivate: document.getElementById('bk-priv')?.checked, onProgress: t => { if (st) st.textContent = t; } });
+        try { localStorage.setItem('nido-last-backup', String(Date.now())); } catch { }
+        if (st) st.textContent = `✅ Listo · ${(r.size / 1048576).toFixed(1)} MB · ${r.photos} fotos`; toast('💾 Respaldo descargado');
+      } catch (e) { console.error(e); toast('⚠️ No se pudo crear el respaldo: ' + e.message); if (st) st.textContent = ''; }
+      el.disabled = false;
+    },
+    async restore() {
+      const [file] = await pickFiles({ accept: '.zip,.json,application/zip,application/json' }); if (!file) return;
+      let data; try { data = await readBackupFile(file); } catch (e) { toast('⚠️ ' + e.message); return; }
+      modal({
+        title: '♻️ Restaurar respaldo', body: `<p class="bold">Respaldo de <b>${esc(data.family?.name || '')}</b> del ${new Date(data.createdAt).toLocaleString('es-MX')}${data.by ? ' (lo hizo ' + esc(data.by) + ')' : ''}.</p>
+          <p class="small muted">${backupSummary(data)}</p><p class="small bold">Se vuelven a crear todos los registros del respaldo. Lo que agregaron después se conserva; lo que se editó vuelve a como estaba en el respaldo.</p>`,
+        submitLabel: '♻️ Restaurar',
+        submit: async () => { toast('♻️ Restaurando…'); const n = await restoreBackup(data, { onProgress: t => toast(t) }); toast(`✅ Listo: ${n} registros restaurados`); }
+      });
+    },
     pickTheme(el) {
       const id = el.dataset.id;
       if (id === 'auto') { preview = null; applyTheme('auto'); return; }

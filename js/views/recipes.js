@@ -1,5 +1,6 @@
 // 🍲 Recetario familiar: las recetas de la abuela, con modo cocina paso a paso
 import { S, hooks, members, member, notify, onCleanup } from '../store.js';
+import { addToMenuForm } from './menu.js';
 import { esc, avatar, modal, toast, compressImage, pickFiles, fmtShort, isoDate } from '../ui.js';
 
 const CATS = { desayuno: ['🍳', 'Desayuno'], comida: ['🍲', 'Comida'], cena: ['🌮', 'Cena'], postre: ['🍰', 'Postre'], bebida: ['🥤', 'Bebida'], botana: ['🥨', 'Botana'], fiesta: ['🎉', 'Para fiestas'], salsa: ['🌶️', 'Salsas'] };
@@ -60,7 +61,7 @@ export const recipeDetail = {
         ${r.photo ? '' : `<div class="rec-big-emoji">${esc(r.emoji || '🍲')}</div>`}
         <div class="rec-hero-t"><div class="chip">${CATS[r.category]?.[0] || ''} ${CATS[r.category]?.[1] || ''}</div><h1 class="display" style="font-size:clamp(30px,6vw,48px);margin-top:8px">${esc(r.title)}</h1>
           <div class="row wrap small bold" style="gap:14px">${r.author ? `<span>👩‍🍳 Receta de ${esc(r.author)}</span>` : ''}${r.time ? `<span>⏱️ ${esc(r.time)}</span>` : ''}${r.servings ? `<span>🍽️ ${esc(r.servings)}</span>` : ''}</div></div></section>
-      <div class="row wrap mt"><button class="btn primary" data-act="cook">👩‍🍳 Modo cocina</button><button class="btn" data-act="toggleFav">${fav ? '❤️ En favoritas' : '🤍 Favorita'}</button><button class="btn" data-act="toShop">🛒 Ingredientes a la lista</button><button class="btn" data-act="cooked">✅ Lo preparé hoy</button><button class="btn ghost" data-act="edit">✏️</button></div>
+      <div class="row wrap mt"><button class="btn primary" data-act="cook">👩‍🍳 Modo cocina</button><button class="btn" data-act="toMenu">📅 Al menú</button><button class="btn" data-act="toggleFav">${fav ? '❤️ En favoritas' : '🤍 Favorita'}</button><button class="btn" data-act="toShop">🛒 Ingredientes a la lista</button><button class="btn" data-act="cooked">✅ Lo preparé hoy</button><button class="btn ghost" data-act="edit">✏️</button></div>
       <div class="grid mt" style="grid-template-columns:minmax(0,1fr) minmax(0,1.4fr)" id="rec-grid">
         <section class="card deco"><div class="card-title"><h3>🧺 Ingredientes</h3><span class="tiny muted">${Object.values(checked[id]).filter(Boolean).length}/${(r.ingredients || []).length}</span></div>
           <div class="list">${(r.ingredients || []).map((ing, i) => `<div class="item clickable" data-act="check" data-i="${i}"><span class="check ${checked[id][i] ? 'on' : ''}">${checked[id][i] ? '✓' : ''}</span><span class="grow ${checked[id][i] ? 'done-text' : ''}">${esc(ing)}</span></div>`).join('') || '<div class="empty small">Sin ingredientes</div>'}</div></section>
@@ -89,6 +90,7 @@ export const recipeDetail = {
     onCleanup(() => { el.remove(); });
   },
   actions: {
+    toMenu() { const r = S.data.recipes.find(x => x.id === S.route.params[0]); if (r) addToMenuForm(r); },
     edit() { recipeForm(S.data.recipes.find(x => x.id === S.route.params[0])); },
     check(el) { const id = S.route.params[0]; checked[id][el.dataset.i] = !checked[id][el.dataset.i]; hooks.rerender(); },
     cook() { const r = S.data.recipes.find(x => x.id === S.route.params[0]); if (!(r.steps || []).length) return toast('Esta receta no tiene pasos todavía'); cookStep = 0; hooks.rerender(); },

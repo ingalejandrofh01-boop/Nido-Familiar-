@@ -5,6 +5,9 @@ import { THEMES, nextHoliday, seasonFor } from '../themes.js';
 import { occurrences, EVENT_TYPES } from '../events.js';
 import { openEventForm } from './agenda.js';
 import { pollCard, pollActions } from './polls.js';
+import { upcomingParties, rsvpCount, partyDetail } from './parties.js';
+import { todayMenu, slotLabel, MEALS } from './menu.js';
+import { petAvatar, careButtons, careProgress, foodLeft, vaccinesDue, petDetail } from './pets.js';
 
 function juntos() {
   const t = isoDate(today0());
@@ -23,6 +26,32 @@ function juntos() {
     </div></div>`;
 }
 import { renderAvatar, randomAvatar } from '../avatar.js';
+
+// 🎉 Próxima fiesta + 🍽️ menú de hoy
+function partyMenuWidget() {
+  const p = upcomingParties().find(x => (parseDate(x.date) - today0()) / 864e5 <= 45);
+  const menu = todayMenu();
+  if (!p && !menu.length) return '';
+  let pc = '';
+  if (p) {
+    const c = rsvpCount(p), mine = (p.rsvp || {})[S.me.id], items = p.items || [], cov = items.filter(i => i.by).length, days = Math.round((parseDate(p.date) - today0()) / 864e5);
+    pc = `<section class="card deco party-home"><a href="#/fiesta/${p.id}" style="text-decoration:none;color:inherit" class="row"><span class="party-emoji sm">${esc(p.emoji || '🎉')}</span><div class="grow" style="min-width:0"><div class="small bold muted">🎉 ${days === 0 ? '¡Es hoy!' : days === 1 ? 'Mañana' : `En ${days} días`}</div><div class="bold" style="font-size:18px">${esc(p.title)}</div><div class="tiny muted bold">👥 ${c.people} van${items.length ? ` · 🧺 ${cov}/${items.length} cubierto` : ''}${p.place ? ` · 📍 ${esc(p.place)}` : ''}</div></div></a>
+      ${mine ? `<div class="tiny bold mt-s">${mine.s === 'si' ? '✅ Confirmaste que vas' : mine.s === 'quiza' ? '🤔 Dijiste que tal vez' : '❌ Dijiste que no puedes'} · <a class="link" href="#/fiesta/${p.id}">¿Qué llevas?</a></div>` : `<div class="row mt-s" style="gap:6px"><button class="btn sm primary" data-act="rsvp" data-id="${p.id}" data-s="si">✅ Voy</button><button class="btn sm" data-act="rsvp" data-id="${p.id}" data-s="quiza">🤔 Tal vez</button><button class="btn sm ghost" data-act="rsvp" data-id="${p.id}" data-s="no">❌</button></div>`}</section>`;
+  }
+  const mc = menu.length ? `<a class="card deco" href="#/menu" style="text-decoration:none;color:inherit"><div class="card-title"><h3>🍽️ Hoy se come</h3><span class="small bold" style="color:var(--accent)">Menú</span></div>${menu.map(x => { const c = member(x.cook); return `<div class="row mt-s"><span class="chip">${MEALS[x.meal][0]} ${MEALS[x.meal][1]}</span><span class="grow bold small">${esc(slotLabel(x))}</span>${c ? `${avatar(c, 'sm')}` : ''}</div>`; }).join('')}</a>` : '';
+  return `<div class="grid ${pc && mc ? 'g2' : ''} mt">${pc}${mc}</div>`;
+}
+
+// 🐾 Cuidados de las mascotas en Inicio
+function petsWidget() {
+  const pets = S.data.pets || []; if (!pets.length) return '';
+  return `<div class="grid ${pets.length > 1 ? 'g2' : ''} mt">${pets.slice(0, 2).map(p => {
+    const { done, need } = careProgress(p); const f = foodLeft(p); const v = vaccinesDue(p, 7)[0];
+    return `<section class="card deco"><div class="card-title"><a class="pet-mini" href="#/mascota/${p.id}" style="text-decoration:none;color:inherit">${petAvatar(p, 'lg')}<div><h3>${esc(p.name)}</h3><div class="tiny muted bold">${done >= need && need ? '😻 ¡Todo listo por hoy!' : `Cuidados de hoy ${done}/${need}`}</div></div></a><a href="#/mascota/${p.id}">Ver</a></div>
+      ${careButtons(p, true)}
+      ${v || (f && f.days <= 5) ? `<div class="chips mt-s">${v ? `<span class="chip ${v.days < 0 ? 'danger' : 'accent'}">💉 ${esc(v.name)} ${v.days < 0 ? 'vencida' : v.days === 0 ? 'hoy' : `en ${v.days} d`}</span>` : ''}${f && f.days <= 5 ? `<span class="chip danger">🍖 Quedan ${f.days} días de comida</span>` : ''}</div>` : ''}</section>`;
+  }).join('')}</div>`;
+}
 const PROMO = { ...randomAvatar(), anim: 'rebote' };
 
 function greeting() {
@@ -73,7 +102,7 @@ export default {
     const evRow = (o) => {
       const T = EVENT_TYPES[o.type] || EVENT_TYPES.familiar;
       const people = (o.ev?.participants || (o.member ? [o.member.id] : [])).map(member).filter(Boolean);
-      const href = o.exchange ? `#/intercambio/${o.exchange.id}` : o.member ? `#/perfil/${o.member.id}` : '';
+      const href = o.exchange ? `#/intercambio/${o.exchange.id}` : o.member ? `#/perfil/${o.member.id}` : o.pet ? `#/mascota/${o.pet.id}` : o.party ? `#/fiesta/${o.party.id}` : '';
       return `<div class="item ${href || o.ev ? 'clickable' : ''}" ${href ? `onclick="location.hash='${href}'"` : o.ev ? `data-act="editEvent" data-id="${o.ev.id}"` : ''}>
         <span class="emoji">${T.e}</span>
         <div class="grow"><div class="bold ellipsis">${o.ev?._private ? '🔒 ' : ''}${esc(o.title)}${o.years && o.type === 'cumple' ? ` · ${o.years} años` : ''}</div>
@@ -137,6 +166,8 @@ export default {
     </div>
 
     ${juntos()}
+    ${partyMenuWidget()}
+    ${petsWidget()}
 
     <div class="grid g2 mt">
       ${photo ? `<section class="card deco"><div class="card-title"><h3>✨ Recuerdo del día</h3><a href="#/album/${photo.albumId}">Ver álbum</a></div>
@@ -151,6 +182,8 @@ export default {
   after(root) { startCountdowns(root); },
   actions: {
     ...pollActions,
+    care: petDetail.actions.care,
+    rsvp: partyDetail.actions.rsvp,
     newEvent(el, e) { openEventForm(); },
     editEvent(el) { openEventForm(findEvent(el.dataset.id)); },
     party() { for (let i = 0; i < 5; i++) setTimeout(() => hooks.celebrate(innerWidth * (0.2 + Math.random() * 0.6), innerHeight * (0.2 + Math.random() * 0.3), 'confetti'), i * 250); }

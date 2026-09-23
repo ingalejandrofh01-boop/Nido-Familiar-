@@ -31,12 +31,17 @@ import { tripsList, tripDetail } from './views/trips.js';
 import retos from './views/challenges.js';
 import ubicacion, { syncLocationSharing } from './views/location.js';
 import dmView from './views/dm.js';
+import { petsList, petDetail } from './views/pets.js';
+import { partiesList, partyDetail } from './views/parties.js';
+import ruleta from './views/wheel.js';
+import menuView from './views/menu.js';
+import { initSync, syncPill, syncInfo, paint as paintSync } from './sync.js';
 
 const ROUTES = {
   inicio: home, agenda, intercambios: exchangesList, intercambio: exchangeDetail,
   fotos: photosHome, album: albumView, libro: bookView, listas: shopping, tareas: chores,
   dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor,
-  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView
+  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView
 };
 export const NAV = [
   { r: 'inicio', ico: '🏠', t: 'Inicio' },
@@ -45,7 +50,9 @@ export const NAV = [
   { r: 'fotos', ico: '📖', t: 'Libro familiar' },
   { r: 'chat', ico: '💬', t: 'Chat' },
   { sep: 'Juntos' },
+  { r: 'fiestas', ico: '🎉', t: 'Fiestas y posadas' },
   { r: 'encuestas', ico: '🗳️', t: 'Encuestas' },
+  { r: 'ruleta', ico: '🎡', t: 'Ruleta' },
   { r: 'retos', ico: '🏅', t: 'Retos' },
   { r: 'viajes', ico: '✈️', t: 'Viajes' },
   { r: 'recetas', ico: '🍲', t: 'Recetario' },
@@ -53,8 +60,10 @@ export const NAV = [
   { r: 'arbol', ico: '🌳', t: 'Árbol genealógico' },
   { r: 'ubicacion', ico: '📍', t: '¿Dónde andamos?' },
   { sep: 'Casa' },
+  { r: 'menu', ico: '🍽️', t: 'Menú semanal' },
   { r: 'listas', ico: '🛒', t: 'Compras' },
   { r: 'tareas', ico: '🧹', t: 'Tareas y puntos' },
+  { r: 'mascotas', ico: '🐾', t: 'Mascotas' },
   { r: 'dinero', ico: '💰', t: 'Dinero' },
   { r: 'notas', ico: '📝', t: 'Notas' },
   { r: 'donde', ico: '🔎', t: '¿Dónde está?' },
@@ -131,10 +140,11 @@ function shell() {
   const nav = NAV.filter(n => !n.adult || ['admin', 'adulto'].includes(S.me?.role));
   $app.innerHTML = `
     ${S.isDemo ? `<div class="demo-banner" data-act="demoInfo">🧪 Modo demo · toca para saber más</div>` : ''}
-    <header class="mtop"><a href="#/perfil/${S.me?.id}" class="mtop-me">${avatar(S.me, 'sm')}</a><div class="grow"><div class="brand-name" style="font-size:20px">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div>${S.isDemo ? '<span class="chip" data-act="demoInfo" style="font-size:11px">🧪 Demo</span>' : ''}<button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></header>
+    <header class="mtop"><a href="#/perfil/${S.me?.id}" class="mtop-me">${avatar(S.me, 'sm')}</a><div class="grow"><div class="brand-name" style="font-size:20px">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div>${S.isDemo ? '<span class="chip" data-act="demoInfo" style="font-size:11px">🧪 Demo</span>' : ''}${syncPill()}<button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></header>
     <div class="shell">
       <aside class="sidebar">
         <div class="brand"><span class="brand-logo">🪺</span><div class="grow"><div class="brand-name">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div><button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></div>
+        <div class="side-sync">${syncPill()}</div>
         ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${n.ico}</span>${n.t}</a>`).join('')}
       </aside>
       <main class="main" id="view"></main>
@@ -144,7 +154,7 @@ function shell() {
 }
 
 function markNav(name) {
-  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat' };
+  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat', mascota: 'mascotas', fiesta: 'fiestas' };
   const active = groups[name] || name;
   const inMore = !TABS.some(t => t[0] === active);
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.r === active));
@@ -189,7 +199,8 @@ addEventListener('hashchange', onRoute);
 const globalActions = {
   sos: () => openSOS(),
   notifs: () => notifCenter.openPanel(),
-  demoInfo: () => auth.demoInfo()
+  demoInfo: () => auth.demoInfo(),
+  syncInfo: () => syncInfo()
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
@@ -215,7 +226,7 @@ const COLS = {
   members: {}, events: {}, exchanges: {}, albums: {}, photos: { orderBy: ['createdAt', 'asc'] },
   shopping: {}, chores: {}, expenses: {}, messages: { orderBy: ['createdAt', 'desc'], limit: 150 },
   notes: {}, inventory: {}, backgrounds: {}, rewards: {}, notifications: { orderBy: ['createdAt', 'desc'], limit: 80 },
-  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}
+  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}, pets: {}, parties: {}, wheels: {}, spins: { orderBy: ['at', 'desc'], limit: 60 }, menus: {}
 };
 // Colecciones privadas: families/{fid}/private/{uid}/...
 const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', txns: 'txns', myCats: 'categories', budgets: 'budgets', goals: 'goals' };
@@ -228,7 +239,7 @@ async function startFamily() {
     if (!membersLoaded || !famLoaded) return;
     S.me = S.data.members.find(m => m.uid === S.user.uid) || null;
     if (!S.me) { auth.claimProfile(); started = false; return; }
-    if (!started) { started = true; shell(); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); syncLocationSharing(); }
+    if (!started) { started = true; shell(); paintSync(); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); syncLocationSharing(); }
     else hooks.rerender();
   };
   familyUnsub = S.db.watchFamily(f => {
@@ -267,7 +278,7 @@ async function boot() {
   initFx(document.getElementById('fx'));
   S.isDemo = isDemo;
   applyTheme(baseTheme());
-  try { S.db = await createBackend(); }
+  try { S.db = await createBackend(); initSync(S.db); }
   catch (e) {
     console.error(e);
     $app.innerHTML = `<div class="auth"><div class="card auth-card"><div class="auth-logo">⚠️</div><h2>No se pudo conectar con Firebase</h2><p class="muted">Revisa <b>js/config.js</b> y tu conexión a internet.</p><p class="faint small">${esc(e.message)}</p></div></div>`;

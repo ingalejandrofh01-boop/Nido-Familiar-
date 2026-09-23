@@ -103,11 +103,11 @@ export const perfil = {
     const canEdit = isAdmin() || m.id === S.me.id;
     const chores = S.data.chores.filter(c => c.assignee === m.id && !c.done).slice(0, 5);
     return `<a class="link" href="#/familia">‹ Familia</a>
-      <section class="card deco hero mt"><div class="row wrap" style="gap:20px">${avatar(m, 'xl')}
+      <section class="card deco hero mt"><div class="row wrap profile-hero" style="gap:20px">${avatar(m, 'xl')}
         <div class="grow"><div class="hero-greet" style="font-size:clamp(32px,5vw,50px)">${esc(m.name)}</div>
         <div class="hero-sub">${esc(m.relation || '')} · ${ROLES[m.role] || ''}${m.points ? ` · 🏆 ${m.points} pts` : ''}</div>
         ${nb ? `<div class="mt bold">🎂 ${fmtDate(isoDate(nb.date))} · ${nb.days === 0 ? `¡Hoy cumple ${nb.age}! 🎉` : `cumple ${nb.age} en ${nb.days} días`}</div>` : ''}</div>
-        ${canEdit ? `<div class="col"><a class="btn primary" href="#/avatar/${m.id}">🐾 ${m.avatar ? 'Editar avatar' : 'Crear avatar'}</a><button class="btn" data-act="edit">✏️ Editar datos</button></div>` : ''}</div></section>
+        ${canEdit ? `<div class="col profile-acts"><a class="btn primary" href="#/avatar/${m.id}">🐾 ${m.avatar ? 'Editar avatar' : 'Crear avatar'}</a><button class="btn" data-act="edit">✏️ Editar datos</button></div>` : ''}</div></section>
       <div class="grid g2 mt">
         <section class="card deco"><div class="card-title"><h3>📇 Contacto</h3></div><div class="list">
           ${m.phone ? `<a class="item clickable" href="tel:${esc(m.phone)}" style="text-decoration:none"><span class="emoji">📞</span><div class="grow bold">${esc(m.phone)}</div><span class="chip">Llamar</span></a>

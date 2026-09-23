@@ -2,7 +2,7 @@
 export const S = {
   db: null, user: null, family: null, me: null, isDemo: false,
   data: { members: [], events: [], exchanges: [], albums: [], photos: [], shopping: [], chores: [], expenses: [], messages: [], notes: [], inventory: [], backgrounds: [], rewards: [], notifications: [],
-    recipes: [], capsules: [], polls: [], trips: [], challenges: [], locations: [], dms: [],
+    recipes: [], capsules: [], polls: [], trips: [], challenges: [], locations: [], dms: [], pets: [], parties: [], wheels: [], spins: [], menus: [],
     myEvents: [], myNotes: [], accounts: [], txns: [], myCats: [], budgets: [], goals: [] },
   subs: {},          // suscripciones de la vista actual
   route: { name: 'inicio', params: [] }

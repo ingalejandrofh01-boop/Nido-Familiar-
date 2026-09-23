@@ -14,7 +14,7 @@ const uid6 = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(
 export const newId = uid6;
 
 // ---------------- Almacenamiento seguro (demo) ----------------
-const LS_KEY = 'nido-demo-v5';
+const LS_KEY = 'nido-demo-v7';
 let mem = null;
 function load() {
   if (mem) return mem;
@@ -31,7 +31,7 @@ function applyQuery(rows, opts = {}) {
   let out = rows;
   if (opts.where) {
     const [f, op, v] = opts.where;
-    out = out.filter(r => op === '==' ? r[f] === v : op === 'in' ? v.includes(r[f]) : op === 'array-contains' ? (r[f] || []).includes(v) : true);
+    out = out.filter(r => op === '==' ? r[f] === v : op === '!=' ? (f in r && r[f] !== v) : op === 'in' ? v.includes(r[f]) : op === 'array-contains' ? (r[f] || []).includes(v) : true);
   }
   if (opts.orderBy) {
     const [f, dir = 'asc'] = opts.orderBy;
@@ -83,6 +83,7 @@ function demoBackend() {
       watchers.add(w); setTimeout(w.fire, 0);
       return () => watchers.delete(w);
     },
+    async list(path) { return Object.entries(col(path)).map(([id, v]) => ({ id, ...v })); },
     async get(path, id) { const v = col(path)[id]; return v ? { id, ...v } : null; },
     async add(path, data) { const id = uid6(); col(path)[id] = { ...data, createdAt: data.createdAt || Date.now() }; persist(); emit(path); return id; },
     async set(path, id, data) { col(path)[id] = { ...data }; persist(); emit(path); },
@@ -168,6 +169,7 @@ async function firebaseBackend() {
       return F.onSnapshot(toQuery(path, opts), snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))),
         err => { console.error('watch', path, err); cb([]); });
     },
+    async list(path) { const s = await F.getDocs(F.collection(fs, famPath(path))); return s.docs.map(d => ({ id: d.id, ...d.data() })); },
     async get(path, id) { const s = await F.getDoc(F.doc(fs, famPath(path), id)); return s.exists() ? { id: s.id, ...s.data() } : null; },
     async add(path, data) { const r = await F.addDoc(F.collection(fs, famPath(path)), clean({ ...data, createdAt: data.createdAt || Date.now() })); return r.id; },
     async set(path, id, data) { await F.setDoc(F.doc(fs, famPath(path), id), clean(data)); },
