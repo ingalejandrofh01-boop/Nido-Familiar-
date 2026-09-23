@@ -1,5 +1,5 @@
 // Lógica de eventos: repeticiones, cumpleaños e intercambios en el calendario
-import { S } from './store.js';
+import { S, allEvents } from './store.js';
 import { isoDate, parseDate } from './ui.js';
 
 export const EVENT_TYPES = {
@@ -21,7 +21,7 @@ export const REPEATS = { none: 'No se repite', daily: 'Cada día', weekly: 'Cada
 export function occurrences(from, to) {
   const out = [];
   const add = (d, item) => { if (d >= from && d <= to) out.push({ ...item, date: isoDate(d) }); };
-  for (const ev of S.data.events) {
+  for (const ev of allEvents()) {
     const start = parseDate(ev.date); if (!start) continue;
     const base = { title: ev.title, type: ev.type || 'familiar', ev, time: ev.time };
     const rep = ev.repeat || 'none';

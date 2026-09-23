@@ -46,15 +46,17 @@ Para no requerir el plan de pago de Firebase Storage, las fotos se **comprimen e
 | Módulo | Qué hace |
 |---|---|
 | 🏠 Inicio | Saludo, cuenta regresiva a la próxima fiesta, eventos de hoy, avisos fijados, próximo intercambio, cumpleaños, recuerdo del día, ranking |
-| 🎁 Intercambios | Estilo por temporada (cambia todo el diseño de la página), presupuesto, reglas, parejas que no pueden tocarse, **sorteo secreto**, regalo animado que se abre para revelar, listas de deseos, revelación para quien no tiene cuenta, "revelar a todos" el día del evento |
+| 🎁 Intercambios | **Sala del sorteo en vivo** (se ve quién está listo, cuenta regresiva y animación sincronizada para todos), estilo por temporada (cambia todo el diseño de la página), presupuesto, reglas, parejas que no pueden tocarse, **sorteo secreto**, regalo animado que se abre para revelar, listas de deseos, revelación para quien no tiene cuenta, "revelar a todos" el día del evento |
 | 📅 Agenda | Calendario mensual, citas, escuela, viajes de varios días, repeticiones (diario, semanal, mensual, anual), cumpleaños y aniversarios automáticos |
 | 📖 Libro familiar | Capítulos con portada, fotos tipo polaroid, visor, **libro con páginas que se voltean en 3D**, usar una foto como fondo del tema |
 | 🛒 Compras | Listas compartidas en tiempo real (Súper, Farmacia, Casa, personalizadas) |
 | 🧹 Tareas | Responsable, puntos, tareas que se repiten, ranking y **premios canjeables** |
-| 💰 Dinero | Gastos por mes, presupuesto, categorías, quién pagó y **cuentas entre familiares** (sólo adultos) |
+| 💰 Dinero | **Mis finanzas (privadas para cada quien):** cuentas, ingresos, gastos, transferencias, categorías que se crean solas y se adivinan por la descripción, presupuestos con alertas, metas de ahorro, gráficas y resumen del mes. **Familiar (adultos):** gastos compartidos, presupuesto y cuentas entre familiares |
+| 🔔 Notificaciones | Campanita con la actividad de la familia en tiempo real, banners dentro de la app, avisos en el teléfono (con permiso), recordatorios del día (cumpleaños, eventos, tareas) |
+| 🔒 Privado | Notas y eventos "sólo yo lo veo" y finanzas personales: Firebase sólo deja leerlos a su dueño |
 | 💬 Chat | Mensajes, **avisos fijados**, "llegué a casa", compartir ubicación |
 | 📝 Notas / 🔎 ¿Dónde está? | Wi-Fi, contactos, seguros (con notas ocultas), e inventario de dónde se guardan las cosas |
-| 🐾 Avatares | Creador de avatar animado: 15 animalitos (gato, perro, zorro, conejo, oso, panda, koala, león, tigre, pingüino, búho, rana, cerdito, ratón, unicornio), colores de pelaje/detalles/marcas (o cualquier color), patrones, 8 tipos de ojos y su color, cejas, 7 expresiones, chapitas, 14 sombreros, 7 lentes/maquillajes, 7 accesorios de cuello, fondos y 7 animaciones. En cada temporada se ponen solos su accesorio (gorro navideño, sombrero de bruja, flores de Muertos…) y el día de su cumpleaños ¡llevan corona! |
+| 🐾 Avatares | Creador de avatar animado con volumen y sombreado 3D: 29 animalitos (gato, perro, zorro, conejo, oso, panda, koala, león, tigre, pingüino, búho, rana, cerdito, ratón, unicornio, lobo, mapache, ardilla, elefante, jirafa, chango, vaca, borrego, pollito, dragón, ajolote, jaguar, perezoso, llama), pestañas, colores de pelaje/detalles/marcas (o cualquier color), patrones, 8 tipos de ojos y su color, cejas, 7 expresiones, chapitas, 14 sombreros, 7 lentes/maquillajes, 7 accesorios de cuello, fondos y 7 animaciones. En cada temporada se ponen solos su accesorio (gorro navideño, sombrero de bruja, flores de Muertos…) y el día de su cumpleaños ¡llevan corona! |
 | 👨‍👩‍👧‍👦 Familia | Perfiles con foto, cumpleaños, contacto de emergencia, info médica, **roles** (Administrador, Adulto, Adolescente, Niño) |
 | 🚨 SOS | Llamar al 911, alerta a la familia con ubicación, mandar por WhatsApp, llamar directo |
 | ⚙️ Ajustes | Tema automático o fijo (para todos o sólo tu teléfono), intensidad de efectos, fondo con foto propia |

@@ -34,7 +34,7 @@ service cloud.firestore {
         && request.resource.data.roles[request.auth.uid] == 'admin';
 
       // Admin edita todo; un adulto puede cambiar tema/presupuesto;
-      // alguien con el código puede UNIRSE (sólo agregarse a sí mismo, sin ser admin)
+      // alguien con el código Y con su correo en allowedEmails puede UNIRSE (sólo agregarse a sí mismo, sin ser admin)
       allow update: if isAdmin(fid)
         || (isAdult(fid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['theme', 'effects', 'budget']))
         || (signedIn()
@@ -43,13 +43,19 @@ service cloud.firestore {
             && request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()) == [request.auth.uid].toSet()
             && resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).size() == 0
             && request.resource.data.roles.diff(resource.data.roles).affectedKeys().hasOnly([request.auth.uid])
-            && request.resource.data.roles[request.auth.uid] in ['adulto', 'adolescente', 'nino']);
+            && request.resource.data.roles[request.auth.uid] in ['adulto', 'adolescente', 'nino']
+            && request.auth.token.email_verified == true
+            && request.auth.token.email.lower() in resource.data.get('allowedEmails', []));
 
       allow delete: if isAdmin(fid);
 
       // Colecciones de la familia (eventos, fotos, compras, chat, etc.)
       match /{col}/{docId} {
         allow read, write: if isMember(fid) && col != 'expenses';
+      }
+      // 🔒 Datos privados: sólo su dueño (notas, eventos y finanzas personales)
+      match /private/{uid}/{col}/{docId} {
+        allow read, write: if isMember(fid) && request.auth.uid == uid;
       }
       // Dinero: sólo adultos
       match /expenses/{docId} {

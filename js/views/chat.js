@@ -1,5 +1,5 @@
 // 💬 Chat familiar con avisos fijados y "¡Ya llegué!"
-import { S, hooks, member, isAdmin } from '../store.js';
+import { S, hooks, member, isAdmin, notify } from '../store.js';
 import { esc, avatar, timeAgo, toast } from '../ui.js';
 
 let pinMode = false;
@@ -47,7 +47,7 @@ export default {
       const i = f.querySelector('input'); const text = i.value.trim(); if (!text) return;
       i.value = '';
       await S.db.add('messages', { text, author: S.me.id, pinned: pinMode, createdAt: Date.now() });
-      if (pinMode) { pinMode = false; toast('📌 Aviso fijado para todos'); }
+      if (pinMode) { pinMode = false; toast('📌 Aviso fijado para todos'); notify({ icon: '📌', title: `Aviso de ${S.me.name}`, body: text, link: 'chat' }); }
       document.getElementById('chat-input')?.focus();
     },
     pinMode() { pinMode = !pinMode; hooks.rerender(); },

@@ -14,7 +14,7 @@ const uid6 = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(
 export const newId = uid6;
 
 // ---------------- Almacenamiento seguro (demo) ----------------
-const LS_KEY = 'nido-demo-v2';
+const LS_KEY = 'nido-demo-v4';
 let mem = null;
 function load() {
   if (mem) return mem;
@@ -86,7 +86,15 @@ function demoBackend() {
     async get(path, id) { const v = col(path)[id]; return v ? { id, ...v } : null; },
     async add(path, data) { const id = uid6(); col(path)[id] = { ...data, createdAt: data.createdAt || Date.now() }; persist(); emit(path); return id; },
     async set(path, id, data) { col(path)[id] = { ...data }; persist(); emit(path); },
-    async update(path, id, data) { col(path)[id] = { ...(col(path)[id] || {}), ...data }; persist(); emit(path); },
+    async update(path, id, data) {
+      const doc = { ...(col(path)[id] || {}) };
+      for (const [k, v] of Object.entries(data)) {
+        if (!k.includes('.')) { doc[k] = v; continue; }
+        const parts = k.split('.'); let o = doc;
+        parts.slice(0, -1).forEach(p => { o[p] = { ...(o[p] || {}) }; o = o[p]; }); o[parts.at(-1)] = v;
+      }
+      col(path)[id] = doc; persist(); emit(path);
+    },
     async remove(path, id) { delete col(path)[id]; persist(); emit(path); },
     async resetDemo() { try { localStorage.removeItem(LS_KEY); } catch { } mem = null; location.reload(); }
   };
@@ -104,7 +112,7 @@ async function firebaseBackend() {
   const fs = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });
   let fid = null;
   let user = null;
-  const mapUser = u => u ? { uid: u.uid, name: u.displayName || (u.email || '').split('@')[0], email: u.email, photo: u.photoURL } : null;
+  const mapUser = u => u ? { uid: u.uid, name: u.displayName || (u.email || '').split('@')[0], email: (u.email || '').toLowerCase(), photo: u.photoURL, verified: u.emailVerified } : null;
   const famPath = (p) => `families/${fid}/${p}`;
   const toQuery = (path, opts = {}) => {
     const c = F.collection(fs, famPath(path));
@@ -124,9 +132,12 @@ async function firebaseBackend() {
     async signUpEmail(email, pass, name) {
       const cred = await A.createUserWithEmailAndPassword(auth, email, pass);
       if (name) await A.updateProfile(cred.user, { displayName: name });
+      try { await A.sendEmailVerification(cred.user); } catch (e) { console.warn(e); }
       user = mapUser(cred.user); if (name) user.name = name;
     },
     async signOut() { fid = null; await A.signOut(auth); },
+    async resendVerification() { if (auth.currentUser) await A.sendEmailVerification(auth.currentUser); },
+    async reloadUser() { if (auth.currentUser) { await auth.currentUser.reload(); await auth.currentUser.getIdToken(true); user = mapUser(auth.currentUser); } return user; },
     async getMyFamilyId() {
       const s = await F.getDoc(F.doc(fs, 'users', user.uid));
       fid = s.exists() ? s.data().familyId || null : null;
@@ -136,7 +147,7 @@ async function firebaseBackend() {
     async createFamily(name) {
       const ref = F.doc(F.collection(fs, 'families'));
       const code = Math.random().toString(36).slice(2, 8).toUpperCase();
-      await F.setDoc(ref, { name, code, createdBy: user.uid, memberUids: [user.uid], roles: { [user.uid]: 'admin' }, theme: 'auto', createdAt: Date.now() });
+      await F.setDoc(ref, { name, code, createdBy: user.uid, memberUids: [user.uid], roles: { [user.uid]: 'admin' }, allowedEmails: user.email ? [user.email] : [], theme: 'auto', createdAt: Date.now() });
       await F.setDoc(F.doc(fs, 'invites', code), { familyId: ref.id, familyName: name });
       await F.setDoc(F.doc(fs, 'users', user.uid), { familyId: ref.id });
       fid = ref.id;
@@ -151,7 +162,7 @@ async function firebaseBackend() {
       await F.setDoc(F.doc(fs, 'users', user.uid), { familyId });
       fid = familyId;
     },
-    watchFamily(cb) { return F.onSnapshot(F.doc(fs, 'families', fid), s => cb({ id: s.id, ...s.data() })); },
+    watchFamily(cb) { return F.onSnapshot(F.doc(fs, 'families', fid), s => cb(s.exists() ? { id: s.id, ...s.data() } : { denied: true }), err => { console.error(err); cb({ denied: true }); }); },
     async updateFamily(data) { await F.updateDoc(F.doc(fs, 'families', fid), clean(data)); },
     watch(path, opts, cb) {
       return F.onSnapshot(toQuery(path, opts), snap => cb(snap.docs.map(d => ({ id: d.id, ...d.data() }))),

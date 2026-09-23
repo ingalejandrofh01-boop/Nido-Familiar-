@@ -4,11 +4,10 @@
 // ============================================================
 let uid = 0;
 
-// ---------- utilidades de color ----------
-function hex2rgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(c => c + c).join(''); const n = parseInt(h, 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
-function rgb2hex(r, g, b) { return '#' + [r, g, b].map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join(''); }
-export function shade(hex, p) { const [r, g, b] = hex2rgb(hex); const t = p < 0 ? 0 : 255, k = Math.abs(p); return rgb2hex(r + (t - r) * k, g + (t - g) * k, b + (t - b) * k); }
-const lum = (hex) => { const [r, g, b] = hex2rgb(hex); return (0.299 * r + 0.587 * g + 0.114 * b) / 255; };
+import { shade, lum } from './avatar-color.js';
+import { NEW_SPECIES, NEW_GEOM, PARTS, FLUFFY, extraPattern } from './avatar-species.js';
+export { shade };
+let CUR = '';
 const INK = '#2a2130';
 
 // ---------- OPCIONES ----------
@@ -27,7 +26,8 @@ export const SPECIES = {
   rana: { n: 'Ranita', e: '🐸', fur: '#79cc68', sec: '#dcf6cf', extra: '#4f9a42', pattern: 'manchas' },
   cerdito: { n: 'Cerdito', e: '🐷', fur: '#ffb9c6', sec: '#ff96ab', extra: '#e8798f', pattern: 'ninguno' },
   raton: { n: 'Ratoncito', e: '🐭', fur: '#bcbcc6', sec: '#f3f3f6', extra: '#ffb3c6', pattern: 'ninguno' },
-  unicornio: { n: 'Unicornio', e: '🦄', fur: '#fcf5ff', sec: '#ffffff', extra: '#ffcf5a', pattern: 'ninguno' }
+  unicornio: { n: 'Unicornio', e: '🦄', fur: '#fcf5ff', sec: '#ffffff', extra: '#ffcf5a', pattern: 'ninguno' },
+  ...NEW_SPECIES
 };
 export const FUR_COLORS = ['#f4a259', '#ec7a32', '#c98c5a', '#94603f', '#5e3a24', '#3a2e2a', '#f3bb4d', '#f3eee9', '#fbfbfb', '#bcbcc6', '#6b6f7a', '#34405a', '#79cc68', '#ffb9c6', '#c9a7ff', '#8fd3ff', '#9ee6c9', '#ffe066', '#ff8fa3', '#e0c3a8'];
 export const SEC_COLORS = ['#ffffff', '#fff4e6', '#f7e8d6', '#ecc9a2', '#fff1d6', '#eef1f4', '#dcf6cf', '#ffd6e0', '#e8dcff', '#d6f0ff', '#2d2d33', '#ff96ab'];
@@ -38,7 +38,7 @@ export const ACC_COLORS = ['#e63946', '#ff8fab', '#ffb703', '#2a9d8f', '#3a86ff'
 export const BG_COLORS = [['#ffd6e0', '#ffafcc'], ['#cde7ff', '#8ec5ff'], ['#d8f3dc', '#95d5b2'], ['#fff3b0', '#ffd166'], ['#e9d5ff', '#c4a1ff'], ['#ffe5d9', '#ffb4a2'], ['#caf0f8', '#48cae4'], ['#2b2d42', '#5c5f84'], ['#1b1340', '#6a4c93'], ['#ffffff', '#e9ecef'], ['#fde2e4', '#bee1e6'], ['#ffcad4', '#b28dff']];
 
 export const OPTIONS = {
-  pattern: { ninguno: 'Liso', rayas: 'Rayas', manchas: 'Manchas', parche: 'Parche', antifaz: 'Antifaz', frente: 'Estrella en la frente' },
+  pattern: { ninguno: 'Liso', rayas: 'Rayas', manchas: 'Manchas', parche: 'Parche', antifaz: 'Antifaz', frente: 'Estrella en la frente', rosetas: 'Rosetas de jaguar', jirafa: 'Manchas de jirafa', vaca: 'Manchas de vaca' },
   eyes: { brillantes: 'Brillantes', redondos: 'Redondos', felices: 'Felices', dormilones: 'Dormilones', guino: 'Guiño', estrellas: 'Estrellas', corazones: 'Enamorados', grandes: 'Súper tiernos' },
   brows: { ninguna: 'Sin cejas', suaves: 'Suaves', picaras: 'Pícaras', decididas: 'Decididas', tristes: 'Tiernas' },
   mouth: { gatuna: 'Gatuna :3', sonrisa: 'Sonrisa', risa: 'Carcajada', lengua: 'Lengüita', dienton: 'Dientón', sorpresa: 'Sorpresa', picara: 'Pícara' },
@@ -50,7 +50,7 @@ export const OPTIONS = {
 
 export function defaultAvatar(species = 'gato') {
   const s = SPECIES[species] || SPECIES.gato;
-  return { species, fur: s.fur, sec: s.sec, extra: s.extra, pattern: s.pattern, eyes: species === 'buho' ? 'grandes' : 'brillantes', eyeColor: species === 'buho' ? '#d4a017' : '#3b2a20', brows: 'ninguna', mouth: species === 'conejo' ? 'dienton' : species === 'gato' ? 'gatuna' : 'sonrisa', blush: true, blushColor: '#ff8fab', head: 'ninguno', face: 'ninguno', neck: 'ninguno', acc: '#e63946', bg: BG_COLORS[0], anim: 'respirar', seasonal: true };
+  return { species, fur: s.fur, sec: s.sec, extra: s.extra, pattern: s.pattern, eyes: species === 'buho' ? 'grandes' : 'brillantes', eyeColor: species === 'buho' ? '#d4a017' : '#3b2a20', brows: 'ninguna', mouth: species === 'conejo' ? 'dienton' : species === 'gato' ? 'gatuna' : 'sonrisa', blush: true, blushColor: '#ff8fab', head: 'ninguno', face: 'ninguno', neck: 'ninguno', acc: '#e63946', bg: BG_COLORS[0], anim: 'respirar', seasonal: true, lashes: false };
 }
 const pick = a => a[Math.floor(Math.random() * a.length)];
 export function randomAvatar() {
@@ -61,7 +61,7 @@ export function randomAvatar() {
   a.head = Math.random() < .5 ? 'ninguno' : pick(['corona', 'mono', 'gorra', 'gorro', 'flores', 'flor', 'audifonos', 'fiesta', 'mago', 'charro']);
   a.face = Math.random() < .7 ? 'ninguno' : pick(['redondos', 'sol', 'corazon', 'estrella', 'monoculo']);
   a.neck = Math.random() < .5 ? 'ninguno' : pick(['bufanda', 'corbatin', 'collar', 'paliacate', 'hawaiano']);
-  a.acc = pick(ACC_COLORS); a.bg = pick(BG_COLORS); a.anim = pick(Object.keys(OPTIONS.anim)); a.blushColor = pick(BLUSH_COLORS);
+  a.lashes = Math.random() < .35; a.acc = pick(ACC_COLORS); a.bg = pick(BG_COLORS); a.anim = pick(Object.keys(OPTIONS.anim)); a.blushColor = pick(BLUSH_COLORS);
   return a;
 }
 
@@ -87,10 +87,12 @@ const GEOM = {
   oso: G({ rx: 58 }), panda: G({ rx: 58 }), koala: G({ rx: 55, ry: 50, noseY: 122, mouthY: 139 }), leon: G({ rx: 52, ry: 48, cy: 108 }),
   tigre: G({ rx: 58 }), pinguino: G({ rx: 55, ry: 54, cy: 104, noseY: 122, mouthY: 136 }), buho: G({ rx: 56, ry: 55, cy: 106, eyeY: 100, eyeGap: 25, noseY: 123, mouthY: 138 }),
   rana: G({ rx: 64, ry: 44, cy: 116, eyeY: 72, eyeGap: 30, noseY: 118, mouthY: 130 }), cerdito: G({ rx: 57, noseY: 124, mouthY: 142 }),
-  raton: G({ rx: 52, ry: 48, cy: 110, eyeY: 106, noseY: 124, mouthY: 134 }), unicornio: G({ rx: 52, ry: 53, cy: 108, eyeY: 104, noseY: 126, mouthY: 137 })
+  raton: G({ rx: 52, ry: 48, cy: 110, eyeY: 106, noseY: 124, mouthY: 134 }), unicornio: G({ rx: 52, ry: 53, cy: 108, eyeY: 104, noseY: 126, mouthY: 137 }),
+  ...NEW_GEOM
 };
 
 function ears(a, g) {
+  if (PARTS[a.species]) return PARTS[a.species].ears ? PARTS[a.species].ears(a, g) : '';
   const f = a.fur, o = shade(f, -.35), inner = a.species === 'panda' ? a.sec : (a.species === 'conejo' || a.species === 'raton' || a.species === 'cerdito' ? a.extra : shade(a.sec === '#ffffff' ? '#ffc2d1' : a.sec, -.05));
   const S = `stroke="${o}" stroke-width="3" stroke-linejoin="round"`;
   const pair = (l, r) => `<g class="av-ear l">${l}</g><g class="av-ear r">${r}</g>`;
@@ -117,6 +119,7 @@ function ears(a, g) {
 }
 
 function behindHead(a, g) {
+  if (PARTS[a.species]) return PARTS[a.species].behind ? PARTS[a.species].behind(a, g) : '';
   if (a.species === 'leon') {
     let s = ''; const n = 18, R = 70;
     for (let i = 0; i < n; i++) { const t = i / n * Math.PI * 2; s += `<circle cx="${(100 + Math.cos(t) * R * .95).toFixed(1)}" cy="${(g.cy + Math.sin(t) * R * .9).toFixed(1)}" r="20" fill="${a.extra}"/>`; }
@@ -129,9 +132,34 @@ function behindHead(a, g) {
   return '';
 }
 
+function tufts(a, g) {
+  if (!FLUFFY.has(a.species)) return '';
+  const o = shade(a.fur, -.35); let s = '';
+  const angs = [-148, -122, -58, -32, 168, 186, 12, -6];
+  for (const d of angs) {
+    const t = d * Math.PI / 180, t1 = t - .13, t2 = t + .13, k = 1 + 6 / Math.max(g.rx, g.ry);
+    const p = (tt, kk) => `${(g.cx + Math.cos(tt) * g.rx * kk).toFixed(1)} ${(g.cy + Math.sin(tt) * g.ry * kk).toFixed(1)}`;
+    s += `<path d="M${p(t1, .97)} Q${p(t - .07, k)} ${p(t + .02, k)} Q${p(t + .09, 1.01)} ${p(t2, .97)} Z" fill="url(#${CUR}hg)" stroke="${o}" stroke-width="2.6" stroke-linejoin="round"/>`;
+  }
+  return s;
+}
+function furTexture(a, g) {
+  if (!FLUFFY.has(a.species)) return '';
+  const c = shade(a.fur, lum(a.fur) > .6 ? -.14 : -.22); let s = '';
+  [[-140, .82], [-120, .86], [-60, .86], [-40, .82], [175, .84], [5, .84], [150, .8], [30, .8]].forEach(([d, k]) => {
+    const t = d * Math.PI / 180, x = g.cx + Math.cos(t) * g.rx * k, y = g.cy + Math.sin(t) * g.ry * k;
+    s += `<path d="M${x.toFixed(1)} ${y.toFixed(1)} q${(Math.cos(t) * 5).toFixed(1)} ${(Math.sin(t) * 5 - 2).toFixed(1)} ${(Math.cos(t) * 9).toFixed(1)} ${(Math.sin(t) * 8).toFixed(1)}" stroke="${c}" stroke-width="1.8" fill="none" stroke-linecap="round" opacity=".55"/>`;
+  });
+  return s;
+}
+function rimLight(a, g) {
+  const p = (d, k = .93) => { const t = d * Math.PI / 180; return `${(g.cx + Math.cos(t) * g.rx * k).toFixed(1)} ${(g.cy + Math.sin(t) * g.ry * k).toFixed(1)}`; };
+  return `<path d="M${p(200)} A${g.rx * .93} ${g.ry * .93} 0 0 1 ${p(255)}" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round" opacity=".35"/>
+    <ellipse cx="${g.cx}" cy="${g.cy + g.ry * .55}" rx="${g.rx * .7}" ry="${g.ry * .3}" fill="#000" opacity=".06"/>`;
+}
 function headShape(a, g) {
   const o = shade(a.fur, -.35);
-  const base = `<ellipse cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}" fill="${a.fur}" stroke="${o}" stroke-width="3"/>`;
+  const base = tufts(a, g) + `<ellipse cx="${g.cx}" cy="${g.cy}" rx="${g.rx}" ry="${g.ry}" fill="url(#${CUR}hg)" stroke="${o}" stroke-width="3"/>`;
   let cheeks = '';
   if (['gato', 'tigre', 'leon', 'zorro'].includes(a.species)) {
     // mejillas esponjosas
@@ -148,6 +176,7 @@ function pattern(a, g, id) {
     case 'manchas': s = [[70, -30, 9], [128, -22, 7], [118, -38, 5], [62, 18, 6], [140, 16, 8], [84, -40, 4]].map(([x, dy, r]) => `<circle cx="${x}" cy="${g.cy + dy}" r="${r}" fill="${c}" opacity=".9"/>`).join(''); break;
     case 'parche': s = `<ellipse cx="${100 + g.eyeGap}" cy="${g.eyeY - 2}" rx="19" ry="17" fill="${c}" transform="rotate(-15 ${100 + g.eyeGap} ${g.eyeY})"/>`; break;
     case 'antifaz': s = `<path d="M${g.cx - g.rx} ${g.eyeY - 8} Q100 ${g.eyeY - 22} ${g.cx + g.rx} ${g.eyeY - 8} L${g.cx + g.rx} ${g.eyeY + 12} Q100 ${g.eyeY + 2} ${g.cx - g.rx} ${g.eyeY + 12} Z" fill="${c}"/>`; break;
+    case 'rosetas': case 'jirafa': case 'vaca': s = extraPattern(a.pattern, a, g); break;
     case 'frente': s = `<path d="M100 ${g.cy - g.ry + 10} l4 9 l10 1 l-8 6 l3 10 l-9 -6 l-9 6 l3 -10 l-8 -6 l10 -1 Z" fill="${a.sec}"/>`; break;
   }
   if (!s) return '';
@@ -155,6 +184,7 @@ function pattern(a, g, id) {
 }
 
 function faceArea(a, g) {
+  if (PARTS[a.species]) return PARTS[a.species].face ? PARTS[a.species].face(a, g) : '';
   const s = a.sec, y = g.noseY;
   switch (a.species) {
     case 'gato': case 'tigre': case 'raton': return `<ellipse cx="89" cy="${y + 7}" rx="13" ry="10" fill="${s}"/><ellipse cx="111" cy="${y + 7}" rx="13" ry="10" fill="${s}"/>`;
@@ -182,12 +212,12 @@ function frogEyeBumps(a, g) {
 function eye(style, x, y, color) {
   switch (style) {
     case 'redondos': return `<circle cx="${x}" cy="${y}" r="7.5" fill="${INK}"/><circle cx="${x - 2.4}" cy="${y - 2.6}" r="2.5" fill="#fff"/>`;
-    case 'grandes': return `<ellipse cx="${x}" cy="${y}" rx="11" ry="12.5" fill="#fff" stroke="${INK}" stroke-width="2"/><ellipse cx="${x + 1}" cy="${y + 1.5}" rx="8" ry="9.5" fill="${color}"/><ellipse cx="${x + 1}" cy="${y + 2}" rx="5" ry="6" fill="${INK}"/><circle cx="${x - 2.5}" cy="${y - 2.5}" r="3.4" fill="#fff"/><circle cx="${x + 4}" cy="${y + 5}" r="1.6" fill="#fff"/>`;
+    case 'grandes': return `<ellipse cx="${x}" cy="${y}" rx="11" ry="12.5" fill="#fff" stroke="${INK}" stroke-width="2"/><ellipse cx="${x + 1}" cy="${y + 1.5}" rx="8" ry="9.5" fill="url(#${CUR}ir)"/><ellipse cx="${x + 1}" cy="${y + 2}" rx="5" ry="6" fill="${INK}"/><circle cx="${x - 2.5}" cy="${y - 2.5}" r="3.4" fill="#fff"/><circle cx="${x + 4}" cy="${y + 5}" r="1.6" fill="#fff"/>`;
     case 'felices': return `<path d="M${x - 8} ${y + 2} Q${x} ${y - 9} ${x + 8} ${y + 2}" stroke="${INK}" stroke-width="3.6" fill="none" stroke-linecap="round"/>`;
     case 'dormilones': return `<path d="M${x - 8} ${y} Q${x} ${y + 6} ${x + 8} ${y}" stroke="${INK}" stroke-width="3.4" fill="none" stroke-linecap="round"/><path d="M${x - 7} ${y + 2} l-3 3 M${x + 7} ${y + 2} l3 3" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>`;
     case 'estrellas': { const p = []; for (let i = 0; i < 10; i++) { const r = i % 2 ? 4 : 10, t = -Math.PI / 2 + i * Math.PI / 5; p.push(`${(x + Math.cos(t) * r).toFixed(1)},${(y + Math.sin(t) * r).toFixed(1)}`); } return `<polygon points="${p.join(' ')}" fill="#ffd166" stroke="${INK}" stroke-width="1.8" stroke-linejoin="round"/>`; }
     case 'corazones': return `<path d="M${x} ${y + 8} C ${x - 12} ${y} ${x - 10} ${y - 10} ${x} ${y - 4} C ${x + 10} ${y - 10} ${x + 12} ${y} ${x} ${y + 8} Z" fill="#ff4d6d" stroke="${INK}" stroke-width="1.6"/><circle cx="${x - 4}" cy="${y - 3}" r="1.8" fill="#fff"/>`;
-    default: /* brillantes */ return `<ellipse cx="${x}" cy="${y}" rx="8.5" ry="10" fill="${INK}"/><ellipse cx="${x}" cy="${y + 2.5}" rx="6" ry="6.5" fill="${color}" opacity=".85"/><ellipse cx="${x}" cy="${y + 3}" rx="3.6" ry="4" fill="${INK}"/><circle cx="${x - 2.8}" cy="${y - 3.5}" r="3.1" fill="#fff"/><circle cx="${x + 3}" cy="${y + 3.5}" r="1.4" fill="#fff"/>`;
+    default: /* brillantes */ return `<ellipse cx="${x}" cy="${y}" rx="8.5" ry="10" fill="${INK}"/><ellipse cx="${x}" cy="${y + 2.5}" rx="6" ry="6.5" fill="url(#${CUR}ir)"/><ellipse cx="${x}" cy="${y + 3}" rx="3.6" ry="4" fill="${INK}"/><circle cx="${x - 2.8}" cy="${y - 3.5}" r="3.1" fill="#fff"/><circle cx="${x + 3}" cy="${y + 3.5}" r="1.4" fill="#fff"/>`;
   }
 }
 function eyes(a, g) {
@@ -195,7 +225,11 @@ function eyes(a, g) {
   const l = a.eyes === 'guino' ? eye('brillantes', L, y, a.eyeColor) : eye(a.eyes, L, y, a.eyeColor);
   const r = a.eyes === 'guino' ? eye('felices', Rr, y, a.eyeColor) : eye(a.eyes, Rr, y, a.eyeColor);
   const blink = ['felices', 'dormilones', 'guino', 'estrellas', 'corazones'].includes(a.eyes) ? '' : ' av-blink';
-  return `<g class="av-eyes${blink}">${l}${r}</g>`;
+  const open = ['brillantes', 'grandes', 'redondos'];
+  const lid = (x, st) => open.includes(st) ? `<path d="M${x - 9} ${y - 7} Q${x} ${y - 15} ${x + 9} ${y - 7}" stroke="#000" stroke-width="3" fill="none" opacity=".12" stroke-linecap="round"/>` : '';
+  const lash = (x, dir, st) => a.lashes && (open.includes(st) || st === 'felices' || st === 'dormilones') ? `<path d="M${x + dir * 6} ${y - 8} l${dir * 5} -5 M${x + dir * 8.5} ${y - 4} l${dir * 6} -3 M${x + dir * 3} ${y - 10} l${dir * 3} -6" stroke="${INK}" stroke-width="2" stroke-linecap="round"/>` : '';
+  const ls = a.eyes === 'guino' ? 'brillantes' : a.eyes, rs = a.eyes === 'guino' ? 'felices' : a.eyes;
+  return `<g class="av-eyes${blink}">${lid(L, ls)}${lid(Rr, rs)}${l}${r}${lash(L, -1, ls)}${lash(Rr, 1, rs)}</g>`;
 }
 function brows(a, g) {
   const L = 100 - g.eyeGap, R = 100 + g.eyeGap, y = g.eyeY - (a.eyes === 'grandes' ? 20 : 16);
@@ -209,6 +243,7 @@ function brows(a, g) {
   }
 }
 function nose(a, g) {
+  if (PARTS[a.species]) return PARTS[a.species].nose ? PARTS[a.species].nose(a, g) : '';
   const y = g.noseY, dark = '#3a2a2a';
   switch (a.species) {
     case 'gato': case 'tigre': case 'raton': case 'conejo': {
@@ -227,7 +262,7 @@ function nose(a, g) {
 }
 function mouth(a, g) {
   const y = g.mouthY, st = `stroke="${INK}" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"`;
-  const w = a.species === 'rana' ? 1.8 : 1;
+  const w = (a.species === 'rana' || a.species === 'ajolote') ? 1.8 : 1;
   switch (a.mouth) {
     case 'gatuna': return `<path d="M${100 - 9 * w} ${y - 2} Q${100 - 4.5 * w} ${y + 5} 100 ${y - 1} Q${100 + 4.5 * w} ${y + 5} ${100 + 9 * w} ${y - 2}" ${st}/>`;
     case 'risa': return `<path d="M${100 - 11 * w} ${y - 3} Q100 ${y + 16} ${100 + 11 * w} ${y - 3} Z" fill="#6b2737" stroke="${INK}" stroke-width="2.5" stroke-linejoin="round"/><path d="M${100 - 6} ${y + 6} Q100 ${y + 1} ${100 + 6} ${y + 6} Q100 ${y + 11} ${100 - 6} ${y + 6} Z" fill="#ff7a95"/>`;
@@ -240,10 +275,11 @@ function mouth(a, g) {
 }
 function cheeks(a, g) {
   if (!a.blush) return '';
-  const y = g.species === 'rana' ? g.mouthY - 4 : g.eyeY + 19, dx = g.eyeGap + 10;
+  const y = (g.species === 'rana') ? g.mouthY - 4 : g.eyeY + 19, dx = g.eyeGap + 10;
   return `<ellipse cx="${100 - dx}" cy="${y}" rx="9" ry="5.5" fill="${a.blushColor}" opacity=".55"/><ellipse cx="${100 + dx}" cy="${y}" rx="9" ry="5.5" fill="${a.blushColor}" opacity=".55"/>`;
 }
 function horn(a, g) {
+  if (PARTS[a.species]) return PARTS[a.species].extra ? PARTS[a.species].extra(a, g) : '';
   if (a.species !== 'unicornio') return '';
   const top = g.cy - g.ry;
   const cols = ['#ff9ecd', '#c9a7ff', '#8fd3ff'];
@@ -311,24 +347,29 @@ export function renderAvatar(cfg, opts = {}) {
   const a0 = { ...defaultAvatar(cfg?.species), ...(cfg || {}) };
   const a = opts.raw ? a0 : withSeason(a0, opts.season, opts.crown);
   const g = GEOM[a.species] || GEOM.gato; g.species = a.species;
-  const id = 'av' + (++uid);
+  const id = 'av' + (++uid); CUR = id;
   const [b1, b2] = a.bg || BG_COLORS[0];
   const bodyC = a.species === 'pinguino' ? a.fur : a.fur;
   const noBg = opts.noBg;
   return `<svg class="av anim-${a.anim}" viewBox="${opts.vb || '0 0 200 200'}" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs><radialGradient id="${id}b" cx=".35" cy=".3" r=".85"><stop offset="0" stop-color="${b1}"/><stop offset="1" stop-color="${b2}"/></radialGradient>
-    <clipPath id="${id}c"><circle cx="100" cy="100" r="96"/></clipPath></defs>
+    <clipPath id="${id}c"><circle cx="100" cy="100" r="96"/></clipPath>
+    <radialGradient id="${id}hg" cx=".36" cy=".3" r=".8"><stop offset="0" stop-color="${shade(a.fur, .3)}"/><stop offset=".55" stop-color="${a.fur}"/><stop offset="1" stop-color="${shade(a.fur, -.2)}"/></radialGradient>
+    <linearGradient id="${id}bd" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${shade(a.fur, .15)}"/><stop offset="1" stop-color="${shade(a.fur, -.25)}"/></linearGradient>
+    <radialGradient id="${id}ir" cx=".45" cy=".35" r=".7"><stop offset="0" stop-color="${shade(a.eyeColor, .45)}"/><stop offset=".6" stop-color="${a.eyeColor}"/><stop offset="1" stop-color="${shade(a.eyeColor, -.45)}"/></radialGradient>
+    <radialGradient id="${id}ao"><stop offset="0" stop-color="#000" stop-opacity=".35"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs>
     ${noBg ? '' : `<circle cx="100" cy="100" r="96" fill="url(#${id}b)"/>`}
     <g clip-path="url(#${id}c)">
-      <ellipse cx="100" cy="212" rx="66" ry="54" fill="${bodyC}" stroke="${shade(a.fur, -.35)}" stroke-width="3"/>
+      <ellipse cx="100" cy="212" rx="66" ry="54" fill="url(#${id}bd)" stroke="${shade(a.fur, -.35)}" stroke-width="3"/>
       <ellipse cx="100" cy="206" rx="36" ry="34" fill="${a.species === 'panda' ? '#fbfbfb' : a.sec}" opacity=".95"/>
+      <ellipse cx="100" cy="${Math.min(170, g.cy + g.ry + 4)}" rx="${g.rx * .85}" ry="16" fill="url(#${id}ao)"/>
       ${neckAcc(a)}
     </g>
     ${noBg ? '' : `<circle cx="100" cy="100" r="96" fill="none" stroke="#fff" stroke-width="5" opacity=".85"/>`}
     <g class="av-char"><g class="av-head">
-      ${behindHead(a, g)}${ears(a, g)}${headShape(a, g)}${pattern(a, g, id)}
-      <ellipse cx="${g.cx - g.rx * .35}" cy="${g.cy - g.ry * .5}" rx="${g.rx * .35}" ry="${g.ry * .2}" fill="#fff" opacity=".13"/>
-      ${faceArea(a, g)}${frogEyeBumps(a, g)}${horn(a, g)}${cheeks(a, g)}${brows(a, g)}${eyes(a, g)}${nose(a, g)}${mouth(a, g)}
+      ${behindHead(a, g).replaceAll(`fill="${a.fur}"`, `fill="url(#${id}hg)"`)}${ears(a, g).replaceAll(`fill="${a.fur}"`, `fill="url(#${id}hg)"`)}${headShape(a, g).replaceAll(`fill="${a.fur}"`, `fill="url(#${id}hg)"`)}${pattern(a, g, id)}${furTexture(a, g)}${rimLight(a, g)}
+      <ellipse cx="${g.cx - g.rx * .35}" cy="${g.cy - g.ry * .5}" rx="${g.rx * .3}" ry="${g.ry * .16}" fill="#fff" opacity=".16"/>
+      ${faceArea(a, g)}${frogEyeBumps(a, g)}${horn(a, g)}${cheeks(a, g)}${brows(a, g)}${eyes(a, g)}${PARTS[a.species]?.mouthFirst ? mouth(a, g) + nose(a, g) : nose(a, g) + mouth(a, g)}
       ${faceAcc(a, g)}${headAcc(a, g)}
     </g></g>
     ${fx(a)}

@@ -1,5 +1,5 @@
 // 🎁 Intercambios: sorteo secreto, listas de deseos y revelación con animación
-import { S, hooks, members, member, useSub, isAdult } from '../store.js';
+import { S, hooks, members, member, useSub, isAdult, notify, onCleanup } from '../store.js';
 import { esc, avatar, fmtDate, fmtTime, today0, isoDate, parseDate, modal, memberPicker, toast, money, daysBetween, confirmBox } from '../ui.js';
 import { THEMES, renderScene } from '../themes.js';
 import { startCountdowns } from './home.js';
@@ -12,6 +12,30 @@ const TYPES = [
 ];
 const typeInfo = (k) => TYPES.find(t => t[0] === k) || TYPES[TYPES.length - 1];
 const revealed = {}; // estado local de "caja abierta"
+const played = new Set();
+
+// 🎬 Animación del sorteo en vivo (todos la ven al mismo tiempo)
+function playLive(x) {
+  const t = THEMES[x.type] || THEMES.clasico;
+  const ps = (x.participants || []).map(member).filter(Boolean);
+  const el = document.createElement('div'); el.className = 'live-draw';
+  const n = ps.length, R = Math.min(150, innerWidth * .34);
+  el.innerHTML = `<div class="ld-inner"><div class="ld-title">${esc(x.title)}</div>
+    <div class="ld-stage" style="width:${R * 2 + 90}px;height:${R * 2 + 90}px"><div class="ld-ring">${ps.map((p, i) => { const a = i / n * Math.PI * 2; return `<div class="ld-p" style="left:${R + 45 + Math.cos(a) * R}px;top:${R + 45 + Math.sin(a) * R}px">${avatar(p, 'lg')}</div>`; }).join('')}</div>
+    <div class="ld-count">…</div></div><div class="ld-sub">Mezclando nombres en secreto…</div></div>`;
+  document.body.appendChild(el);
+  const count = el.querySelector('.ld-count'), sub = el.querySelector('.ld-sub');
+  const tick = () => {
+    const left = Math.ceil((x.liveAt - Date.now()) / 1000);
+    if (left > 0) { if (count.textContent !== String(left)) { count.textContent = left; count.classList.remove('pop'); void count.offsetWidth; count.classList.add('pop'); try { navigator.vibrate && navigator.vibrate(30); } catch { } } return; }
+    clearInterval(iv); el.classList.add('done'); count.textContent = '🎁'; sub.innerHTML = '¡Sorteo listo! Cada quien ya tiene a su amigo secreto';
+    try { navigator.vibrate && navigator.vibrate([80, 60, 160]); } catch { }
+    for (let i = 0; i < 7; i++) setTimeout(() => hooks.celebrate(innerWidth * (0.15 + Math.random() * .7), innerHeight * (0.2 + Math.random() * .4), t.tapKind === 'heart' ? 'heart' : 'spark', [t.accent, t.accent2, t.glow, '#fff']), i * 160);
+    const btn = document.createElement('button'); btn.className = 'btn primary lg mt'; btn.textContent = '🎁 Ver a quién le regalo'; btn.onclick = () => { el.classList.add('out'); setTimeout(() => el.remove(), 400); document.querySelector('.gift')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); };
+    el.querySelector('.ld-inner').appendChild(btn);
+  };
+  const iv = setInterval(tick, 100); tick();
+}
 
 // ---------- Sorteo: permutación sin auto-asignarse y respetando exclusiones ----------
 function draw(ids, exclusions = []) {
@@ -79,7 +103,7 @@ function exchangeForm(x = null, preset = 'navidad') {
       const data = { title: d.title.trim(), type: d.type, date: d.date, time: d.time, budget: Number(d.budget) || 0, location: d.location, rules: d.rules, participants: d.participants || [], exclusions };
       if (data.participants.length < 3) { toast('Se necesitan al menos 3 participantes'); return false; }
       if (x) { await S.db.update('exchanges', x.id, data); toast('✅ Guardado'); }
-      else { const id = await S.db.add('exchanges', { ...data, status: 'open', createdBy: S.user.uid }); toast('🎁 ¡Intercambio creado!'); hooks.go('intercambio/' + id); }
+      else { const id = await S.db.add('exchanges', { ...data, status: 'open', createdBy: S.user.uid }); toast('🎁 ¡Intercambio creado!'); notify({ to: data.participants, icon: typeInfo(data.type)[1], title: `Te invitaron: ${data.title}`, body: `${fmtDate(data.date, { weekday: true })}${data.budget ? ' · presupuesto ' + money(data.budget) : ''} · agrega tu lista de deseos 🎁`, link: 'intercambio/' + id }); hooks.go('intercambio/' + id); }
     },
     onClose: () => hooks.rerender(),
     danger: x ? { label: '🗑️ Eliminar', confirm: '¿Eliminar este intercambio y su sorteo?', action: async () => { await S.db.remove('exchanges', x.id); hooks.go('intercambios'); } } : null
@@ -143,10 +167,18 @@ export const exchangeDetail = {
     // Sección central según estado
     let center = '';
     if (x.status === 'open') {
-      center = `<section class="card deco center">
-        <div style="font-size:60px">🎲</div><h2 style="font-size:24px;font-weight:900">¡Listos para el sorteo!</h2>
-        <p class="muted bold">${ps.length} participantes${(x.exclusions || []).length ? ` · ${(x.exclusions || []).length} pareja(s) que no se pueden tocar` : ''}. Cada quien verá sólo a quién le regala.</p>
-        ${isOrg ? `<button class="btn primary lg mt" data-act="draw" data-id="${id}">✨ Hacer el sorteo</button>` : '<p class="small muted">El organizador hará el sorteo pronto.</p>'}
+      const lobby = x.lobby || {}; const now = Date.now();
+      const here = (mid) => lobby[mid] && now - lobby[mid] < 90000;
+      const inCount = ps.filter(p => here(p.id)).length;
+      const meIn = here(S.me.id);
+      center = `<section class="card deco center live-lobby">
+        <div class="lobby-title"><span class="live-dot"></span> SALA DEL SORTEO EN VIVO</div>
+        <h2 style="font-size:24px;font-weight:900;margin-top:6px">${inCount === ps.length ? '¡Ya están todos! 🎉' : `${inCount} de ${ps.length} en la sala`}</h2>
+        <p class="muted bold small">Cuando entren, el organizador lanza el sorteo y todos lo ven al mismo tiempo. Cada quien descubre sólo a quién le regala 🤫</p>
+        <div class="lobby-grid">${ps.map(p => `<div class="lobby-p ${here(p.id) ? 'in' : ''}">${avatar(p, here(p.id) ? 'lg live' : 'lg')}<div class="tiny bold ellipsis">${esc(p.name)}</div><div class="tiny ${here(p.id) ? '' : 'muted'}">${here(p.id) ? '✅ Listo' : p.uid ? '⏳ Esperando' : '📱 Sin cuenta'}</div></div>`).join('')}</div>
+        ${(x.participants || []).includes(S.me.id) ? (meIn ? '<div class="chip accent mt">🙋 Estás en la sala</div>' : `<button class="btn primary lg mt" data-act="joinLobby" data-id="${id}">🙋 Entrar a la sala</button>`) : ''}
+        ${isOrg ? `<div class="divider">Organizador</div><button class="btn primary lg" data-act="draw" data-id="${id}">🎲 Lanzar sorteo en vivo</button>
+          <button class="btn sm mt" data-act="nudge" data-id="${id}">📣 Avisar a los que faltan</button>` : '<p class="small muted mt">El organizador lanzará el sorteo en cuanto estén todos.</p>'}
       </section>`;
     } else if (x.status === 'revealed') {
       center = `<section class="card deco"><div class="card-title"><h3>🎊 ¡Gran revelación!</h3></div>
@@ -187,7 +219,18 @@ export const exchangeDetail = {
       <div class="page-head mt" style="margin-bottom:12px"><div><h1 style="font-size:30px">Listas de deseos</h1><p>Pistas para acertar con el regalo</p></div></div>
       <div class="grid auto">${recv && revealed[id] ? wishList(recv, true) : ''}${(recv && revealed[id] ? others : ps).map(m => wishList(m, false)).join('')}</div>`;
   },
-  after(root) { startCountdowns(root); },
+  after(root, [id]) {
+    startCountdowns(root);
+    const x = S.data.exchanges.find(e => e.id === id); if (!x) return;
+    // Latido: mantenerme "en la sala" mientras tenga la pantalla abierta
+    if (x.status === 'open' && x.lobby && x.lobby[S.me.id]) {
+      const t = setInterval(() => S.db.update('exchanges', id, { ['lobby.' + S.me.id]: Date.now() }), 40000);
+      onCleanup(() => clearInterval(t));
+      const r = setInterval(() => hooks.rerender(), 20000); onCleanup(() => clearInterval(r));
+    }
+    // Sorteo en vivo sincronizado
+    if (x.liveAt && Date.now() < x.liveAt + 4000 && !played.has(id + x.liveAt)) { played.add(id + x.liveAt); playLive(x); }
+  },
   actions: {
     edit(el) { exchangeForm(S.data.exchanges.find(e => e.id === el.dataset.id)); },
     async draw(el) {
@@ -196,21 +239,28 @@ export const exchangeDetail = {
       if (!res) { toast('😅 No hay combinación posible con esas parejas. Quita alguna exclusión.'); return; }
       const path = `exchanges/${x.id}/assignments`;
       for (const [g, r] of Object.entries(res)) await S.db.set(path, g, { giverId: g, giverUid: member(g)?.uid || '', receiverId: r });
-      await S.db.update('exchanges', x.id, { status: 'drawn', drawnAt: Date.now() });
-      const t = THEMES[x.type] || THEMES.clasico;
-      for (let i = 0; i < 6; i++) setTimeout(() => hooks.celebrate(innerWidth * Math.random(), innerHeight * 0.4 * Math.random() + 80, t.tapKind === 'heart' ? 'heart' : 'spark', [t.accent, t.accent2, t.glow, '#fff']), i * 180);
-      toast('🎲 ¡Sorteo hecho! Cada quien ya puede ver a quién le toca');
+      await S.db.update('exchanges', x.id, { status: 'drawn', drawnAt: Date.now(), liveAt: Date.now() + 5500 });
+      notify({ to: x.participants, icon: '🎲', title: `¡Ya se hizo el sorteo! ${x.title}`, body: 'Entra y abre tu regalo para ver a quién le toca 🎁', link: 'intercambio/' + x.id });
+    },
+    async joinLobby(el) { await S.db.update('exchanges', el.dataset.id, { ['lobby.' + S.me.id]: Date.now() }); try { navigator.vibrate && navigator.vibrate(40); } catch { } toast('🙋 ¡Entraste a la sala!'); },
+    async nudge(el) {
+      const x = S.data.exchanges.find(e => e.id === el.dataset.id); const lobby = x.lobby || {};
+      const missing = x.participants.filter(id => !(lobby[id] && Date.now() - lobby[id] < 90000) && member(id)?.uid);
+      if (!missing.length) { toast('Ya están todos los que tienen cuenta 🙌'); return; }
+      notify({ to: missing, icon: '📣', title: `¡Te estamos esperando! ${x.title}`, body: 'Entra a la sala del sorteo en vivo', link: 'intercambio/' + x.id });
+      toast(`📣 Avisamos a ${missing.length}`);
     },
     async redraw(el) {
       if (!(await confirmBox('Se borrará el sorteo actual y todos verán a alguien nuevo. ¿Rehacer?'))) return;
       const id = el.dataset.id; const asgs = S.subs['asg-' + id]?.data || [];
       for (const a of asgs) await S.db.remove(`exchanges/${id}/assignments`, a.id);
       Object.keys(revealed).forEach(k => delete revealed[k]);
-      await S.db.update('exchanges', id, { status: 'open' });
+      await S.db.update('exchanges', id, { status: 'open', liveAt: 0, lobby: {} });
     },
     async revealAll(el) {
       if (!(await confirmBox('Todos podrán ver quién le regaló a quién. ¿Revelar?', '🎊 Revelar'))) return;
       await S.db.update('exchanges', el.dataset.id, { status: 'revealed' });
+      { const x = S.data.exchanges.find(e => e.id === el.dataset.id); notify({ to: x.participants, icon: '🎊', title: `¡Gran revelación! ${x.title}`, body: 'Entra a ver quién le regaló a quién', link: 'intercambio/' + x.id }); }
       hooks.celebrate(innerWidth / 2, innerHeight / 3, 'confetti');
     },
     open(el) {

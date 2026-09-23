@@ -88,14 +88,14 @@ export const actions = {
   toSignup() { renderLogin('signup'); },
   toLogin() { renderLogin('login'); },
   async emailLogin(f) { const d = Object.fromEntries(new FormData(f)); try { await S.db.signInEmail(d.email, d.pass); } catch (e) { toast('⚠️ ' + errMsg(e)); } },
-  async emailSignup(f) { const d = Object.fromEntries(new FormData(f)); try { await S.db.signUpEmail(d.email, d.pass, d.name); } catch (e) { toast('⚠️ ' + errMsg(e)); } },
+  async emailSignup(f) { const d = Object.fromEntries(new FormData(f)); try { await S.db.signUpEmail(d.email, d.pass, d.name); toast('📧 Te enviamos un correo para confirmar tu cuenta'); } catch (e) { toast('⚠️ ' + errMsg(e)); } },
   async logout() { await S.db.signOut(); },
   async resetDemo() { await S.db.resetDemo(); },
   async createFamily(f) {
     const name = new FormData(f).get('name').trim(); if (!name) return;
     try {
       await S.db.createFamily(name);
-      await S.db.add('members', { name: S.user.name || 'Yo', uid: S.user.uid, role: 'admin', relation: '', emoji: '😎', color: COLORS[0], points: 0, photo: S.user.photo || '' });
+      await S.db.add('members', { name: S.user.name || 'Yo', uid: S.user.uid, email: S.user.email || '', role: 'admin', relation: '', emoji: '😎', color: COLORS[0], points: 0, photo: S.user.photo || '' });
       toast('🎉 ¡Familia creada!');
       await enterFamily();
     } catch (e) { toast('⚠️ ' + errMsg(e)); }
@@ -105,17 +105,26 @@ export const actions = {
     try {
       const inv = await S.db.lookupInvite(code);
       if (!inv) { toast('⚠️ Código no encontrado'); return; }
+      if (!S.isDemo && S.user && S.user.verified === false) { await S.db.reloadUser(); }
+      if (!S.isDemo && S.db.user && S.db.user.verified === false) {
+        toast('📧 Primero confirma tu correo: te enviamos un enlace. Luego vuelve a intentar.');
+        try { await S.db.resendVerification(); } catch { }
+        return;
+      }
       await S.db.joinFamily(inv.familyId);
       toast(`🎉 Te uniste a ${inv.familyName}`);
       await enterFamily();
-    } catch (e) { toast('⚠️ ' + errMsg(e)); }
+    } catch (e) {
+      if ((e.code || '').includes('permission-denied')) toast(`🔒 Tu correo (${S.user?.email || ''}) no está autorizado en esa familia. Pídele al administrador que lo agregue.`);
+      else toast('⚠️ ' + errMsg(e));
+    }
   },
   async claim(el) {
-    await S.db.update('members', el.dataset.id, { uid: S.user.uid, photo: S.data.members.find(m => m.id === el.dataset.id)?.photo || S.user.photo || '' });
+    await S.db.update('members', el.dataset.id, { uid: S.user.uid, email: S.user.email || '', photo: S.data.members.find(m => m.id === el.dataset.id)?.photo || S.user.photo || '' });
   },
   async newProfile(f) {
     const d = Object.fromEntries(new FormData(f));
     const n = S.data.members.length;
-    await S.db.add('members', { name: d.name, relation: d.relation, birthday: d.birthday, uid: S.user.uid, role: 'adulto', emoji: EMOJIS_PEOPLE[n % EMOJIS_PEOPLE.length], color: COLORS[n % COLORS.length], points: 0, photo: S.user.photo || '' });
+    await S.db.add('members', { name: d.name, relation: d.relation, birthday: d.birthday, uid: S.user.uid, email: S.user.email || '', role: 'adulto', emoji: EMOJIS_PEOPLE[n % EMOJIS_PEOPLE.length], color: COLORS[n % COLORS.length], points: 0, photo: S.user.photo || '' });
   }
 };

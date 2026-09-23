@@ -3,10 +3,13 @@ import { S, hooks, isAdmin, isAdult } from '../store.js';
 import { esc, modal, toast, compressImage, pickFiles, confirmBox } from '../ui.js';
 import { THEMES, renderScene, seasonFor } from '../themes.js';
 import { setIntensity } from '../fx.js';
+import { askPermission } from '../notifications.js';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
 const lsSet = (k, v) => { try { v == null ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch { } };
 let preview = null;
+const isIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent);
+const standalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone;
 async function applyTheme(id) {
   if (lsGet('nido-theme-local')) lsSet('nido-theme-local', id);
   else if (isAdult()) await S.db.updateFamily({ theme: id });
@@ -47,6 +50,11 @@ export default {
           <p class="tiny muted mt-s">También puedes hacerlo desde cualquier foto del libro familiar → “Usar de fondo”.</p></section>
       </div>
 
+      ${standalone() ? '' : `<section class="card deco mt install-card"><span class="big-ico">📲</span><div class="grow"><div class="bold" style="font-size:17px">Instala Nido en tu teléfono</div>
+        <div class="small muted bold">${isIOS() ? 'En iPhone: toca <b>Compartir</b> <span style="font-size:16px">⎋</span> en Safari → <b>Agregar a pantalla de inicio</b>. Así se abre como app y recibe notificaciones.' : S.installPrompt ? 'Se abre a pantalla completa, más rápida y con notificaciones.' : 'En Android: menú ⋮ de Chrome → <b>Instalar app</b> / <b>Agregar a pantalla principal</b>.'}</div></div>
+        ${S.installPrompt ? '<button class="btn primary" data-act="install">Instalar</button>' : ''}</section>`}
+      <section class="card deco mt install-card"><span class="big-ico">🔔</span><div class="grow"><div class="bold" style="font-size:17px">Notificaciones</div><div class="small muted bold">${'Notification' in window ? (Notification.permission === 'granted' ? '✅ Activadas en este dispositivo' : Notification.permission === 'denied' ? 'Bloqueadas: actívalas en los ajustes del navegador para este sitio' : 'Recibe avisos de sorteos, eventos, tareas y cumpleaños') : 'Instala la app para poder activarlas'}</div></div>
+        ${'Notification' in window && Notification.permission === 'default' ? '<button class="btn primary" data-act="perm">Activar</button>' : ''}</section>
       <div class="grid g2 mt">
         <section class="card deco"><div class="card-title"><h3>🏡 Familia</h3></div>
           <div class="item"><span class="emoji">🪺</span><div class="grow"><div class="bold">${esc(S.family?.name || '')}</div><div class="tiny muted">Código de invitación: <b>${esc(S.family?.code || '')}</b></div></div>${isAdmin() ? '<button class="btn sm" data-act="rename">Renombrar</button>' : ''}</div>
@@ -72,6 +80,8 @@ export default {
       else { lsSet('nido-theme-local', null); }
       hooks.rerender();
     },
+    async install() { const p = S.installPrompt; if (!p) return; p.prompt(); await p.userChoice; S.installPrompt = null; hooks.rerender(); },
+    async perm() { await askPermission(); hooks.rerender(); },
     effects(el) { const v = Number(el.dataset.v); lsSet('nido-effects-local', String(v)); setIntensity(v); hooks.rerender(); },
     async bgUpload() {
       const [f] = await pickFiles(); if (!f) return;

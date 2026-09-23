@@ -23,9 +23,9 @@ export function seedDemo() {
   const members = {
     m1: { name: 'Alejandro', relation: 'Yo', role: 'admin', uid: 'demo-user', birthday: `1995-03-08`, color: '#6366f1', emoji: '😎', phone: '5512345678', points: 120, info: 'Tipo de sangre O+', avatar: { species: 'zorro', fur: '#ec7a32', sec: '#fffaf2', extra: '#3b2a24', pattern: 'ninguno', eyes: 'brillantes', eyeColor: '#1f6feb', brows: 'picaras', mouth: 'picara', blush: true, blushColor: '#ff8fab', head: 'ninguno', face: 'redondos', neck: 'ninguno', acc: '#3a86ff', bg: ['#cde7ff', '#8ec5ff'], anim: 'rebote', seasonal: true } },
     m2: { name: 'Laura', relation: 'Mamá', role: 'adulto', birthday: `1968-${md(plus(5))}`, color: '#ec4899', emoji: '👩', phone: '5511112222', points: 95, info: 'Alérgica a la penicilina', avatar: { species: 'gato', fur: '#f3eee9', sec: '#ffffff', extra: '#9d4edd', pattern: 'ninguno', eyes: 'grandes', eyeColor: '#2e9d5b', brows: 'suaves', mouth: 'gatuna', blush: true, blushColor: '#ff8fab', head: 'flor', face: 'ninguno', neck: 'collar', acc: '#ff8fab', bg: ['#ffd6e0', '#ffafcc'], anim: 'corazones', seasonal: true } },
-    m3: { name: 'Roberto', relation: 'Papá', role: 'adulto', birthday: `1966-11-12`, color: '#0ea5e9', emoji: '👨', phone: '5533334444', points: 80, avatar: { species: 'oso', fur: '#94603f', sec: '#ecc9a2', extra: '#5e3a24', pattern: 'ninguno', eyes: 'redondos', eyeColor: '#3b2a20', brows: 'decididas', mouth: 'sonrisa', blush: false, blushColor: '#ff8fab', head: 'gorra', face: 'ninguno', neck: 'ninguno', acc: '#1d3557', bg: ['#d8f3dc', '#95d5b2'], anim: 'respirar', seasonal: true } },
+    m3: { name: 'Roberto', relation: 'Papá', role: 'adulto', birthday: `1966-11-12`, color: '#0ea5e9', emoji: '👨', phone: '5533334444', points: 80, avatar: { species: 'lobo', fur: '#8d96a3', sec: '#eef0f3', extra: '#4b5260', pattern: 'ninguno', eyes: 'redondos', eyeColor: '#3b2a20', brows: 'decididas', mouth: 'sonrisa', blush: false, blushColor: '#ff8fab', head: 'gorra', face: 'ninguno', neck: 'ninguno', acc: '#1d3557', bg: ['#d8f3dc', '#95d5b2'], anim: 'respirar', seasonal: true } },
     m4: { name: 'Ana', relation: 'Hermana', role: 'adolescente', birthday: `2009-12-03`, color: '#f59e0b', emoji: '👧', points: 110, avatar: { species: 'conejo', fur: '#c9a7ff', sec: '#ffffff', extra: '#ffb3c6', pattern: 'ninguno', eyes: 'brillantes', eyeColor: '#7b3fe4', brows: 'ninguna', mouth: 'lengua', blush: true, blushColor: '#ff6b6b', head: 'audifonos', face: 'ninguno', neck: 'ninguno', acc: '#ff8fab', bg: ['#e9d5ff', '#c4a1ff'], anim: 'menear', seasonal: true } },
-    m5: { name: 'Luis', relation: 'Hermano', role: 'nino', birthday: `2015-${md(plus(19))}`, color: '#10b981', emoji: '👦', points: 60, avatar: { species: 'perro', fur: '#c98c5a', sec: '#f7e8d6', extra: '#7a4a2a', pattern: 'parche', eyes: 'felices', eyeColor: '#3b2a20', brows: 'ninguna', mouth: 'risa', blush: true, blushColor: '#ffa94d', head: 'ninguno', face: 'ninguno', neck: 'paliacate', acc: '#e63946', bg: ['#fff3b0', '#ffd166'], anim: 'orejas', seasonal: true } },
+    m5: { name: 'Luis', relation: 'Hermano', role: 'nino', birthday: `2015-${md(plus(19))}`, color: '#10b981', emoji: '👦', points: 60, avatar: { species: 'ajolote', fur: '#ffb3c7', sec: '#ffd9e3', extra: '#ff5d8f', pattern: 'ninguno', eyes: 'felices', eyeColor: '#3b2a20', brows: 'ninguna', mouth: 'risa', blush: true, blushColor: '#ffa94d', head: 'ninguno', face: 'ninguno', neck: 'paliacate', acc: '#e63946', bg: ['#fff3b0', '#ffd166'], anim: 'orejas', seasonal: true } },
     m6: { name: 'Abuela Rosa', relation: 'Abuela', role: 'adulto', birthday: `1945-10-28`, color: '#a855f7', emoji: '👵', phone: '5555556666', info: 'Toma medicamento a las 9 AM', avatar: { species: 'buho', fur: '#a18a78', sec: '#f5e6cc', extra: '#f2a33a', pattern: 'ninguno', eyes: 'grandes', eyeColor: '#8a5a2b', brows: 'suaves', mouth: 'sonrisa', blush: true, blushColor: '#ff8fab', head: 'ninguno', face: 'monoculo', neck: 'bufanda', acc: '#8338ec', bg: ['#ffe5d9', '#ffb4a2'], anim: 'flotar', seasonal: true } }
   };
   const photos = {}; const albums = {
@@ -46,7 +46,7 @@ export function seedDemo() {
 
   return {
     user: { uid: 'demo-user', name: 'Alejandro', email: 'demo@nido.app' },
-    family: { id: 'demo', name: 'Familia Fernández', code: 'NIDO26', theme: 'auto', effects: 1, budget: 20000, memberUids: ['demo-user'], roles: { 'demo-user': 'admin' }, createdBy: 'demo-user' },
+    family: { id: 'demo', name: 'Familia Fernández', code: 'NIDO26', theme: 'auto', effects: 1, budget: 20000, memberUids: ['demo-user'], roles: { 'demo-user': 'admin' }, allowedEmails: ['demo@nido.app', 'laura@ejemplo.com', 'roberto@ejemplo.com'], createdBy: 'demo-user' },
     cols: {
       members,
       events: {
@@ -114,6 +114,43 @@ export function seedDemo() {
         i6: { item: 'Pasaportes', place: 'Caja fuerte del clóset', area: 'Documentos', emoji: '🛂' }
       },
       backgrounds: {},
+      'private/demo-user/accounts': {
+        a1: { name: 'Cartera', type: 'efectivo', initial: 1200, grad: 2 },
+        a2: { name: 'BBVA Nómina', type: 'debito', initial: 8400, grad: 1 },
+        a3: { name: 'Tarjeta Nu', type: 'credito', initial: -2300, grad: 4 },
+        a4: { name: 'Ahorro', type: 'ahorro', initial: 15000, grad: 0 }
+      },
+      'private/demo-user/txns': (() => {
+        const t = {}; let i = 0; const add = (o) => t['t' + (i++)] = { createdAt: now - i * 1000, ...o };
+        for (let m = 0; m < 6; m++) {
+          const d = (day) => iso(new Date(new Date().getFullYear(), new Date().getMonth() - m, Math.min(day, m === 0 ? new Date().getDate() : 28)));
+          add({ kind: 'ingreso', amount: 14500, note: 'Quincena', category: 'Sueldo', accountId: 'a2', date: d(1) });
+          add({ kind: 'ingreso', amount: 14500, note: 'Quincena', category: 'Sueldo', accountId: 'a2', date: d(15) });
+          add({ kind: 'gasto', amount: 1800 + m * 90, note: 'Walmart', category: 'Súper', accountId: 'a2', date: d(3) });
+          add({ kind: 'gasto', amount: 950 - m * 40, note: 'Gasolina Pemex', category: 'Transporte', accountId: 'a3', date: d(5) });
+          add({ kind: 'gasto', amount: 299, note: 'Netflix', category: 'Suscripciones', accountId: 'a3', date: d(7) });
+          add({ kind: 'gasto', amount: 640 + m * 55, note: 'Tacos con amigos', category: 'Comida', accountId: 'a1', date: d(9) });
+          add({ kind: 'gasto', amount: 420, note: 'Uber', category: 'Transporte', accountId: 'a3', date: d(11) });
+          add({ kind: 'gasto', amount: 1100 - m * 60, note: 'Veterinario Max', category: 'Mascota', accountId: 'a2', date: d(12) });
+          add({ kind: 'transfer', amount: 2000, note: 'Ahorro quincenal', accountId: 'a2', toAccountId: 'a4', date: d(16) });
+          add({ kind: 'gasto', amount: 9000, note: 'Renta', category: 'Casa', accountId: 'a2', date: d(2) });
+          add({ kind: 'gasto', amount: 6200, note: 'Aportación a la casa', category: 'Casa', accountId: 'a2', date: d(4) });
+          add({ kind: 'transfer', amount: 1700, note: 'Pago tarjeta Nu', accountId: 'a2', toAccountId: 'a3', date: d(20) });
+          add({ kind: 'transfer', amount: 1500, note: 'Retiro cajero', accountId: 'a2', toAccountId: 'a1', date: d(6) });
+          add({ kind: 'gasto', amount: 780, note: 'Cine y cena', category: 'Diversión', accountId: 'a1', date: d(18) });
+        }
+        return t;
+      })(),
+      'private/demo-user/categories': { c1: { name: 'Mascota', kind: 'gasto', emoji: '🐾' } },
+      'private/demo-user/budgets': { b1: { category: 'Comida', amount: 1500 }, b2: { category: 'Transporte', amount: 1200 }, b3: { category: 'Súper', amount: 2500 } },
+      'private/demo-user/goals': { g1: { name: 'Viaje a Cancún', emoji: '🏝️', target: 25000, saved: 11200, deadline: `${new Date().getFullYear() + 1}-04-01` }, g2: { name: 'Fondo de emergencia', emoji: '🛟', target: 30000, saved: 15000 } },
+      'private/demo-user/notes': { pn1: { title: 'Mi NIP del banco', category: 'Otros', body: 'No lo compartas 🙈 1234', secret: true } },
+      'private/demo-user/events': { pe1: { title: 'Comprar regalo sorpresa para mamá', date: iso(plus(3)), type: 'recordatorio', participants: ['m1'] } },
+      notifications: {
+        nt1: { to: 'all', title: 'Nuevo evento: Viaje a Valle de Bravo', body: 'Toda la familia · en 10 días', icon: '✈️', link: 'agenda', from: 'm2', createdAt: now - 3600000 },
+        nt2: { to: ['m1'], title: 'Te asignaron: Sacar la basura', body: '+10 puntos', icon: '🧹', link: 'tareas', from: 'm3', createdAt: now - 7200000 },
+        nt3: { to: 'all', title: 'Laura subió 3 fotos', body: 'Navidad pasada', icon: '📸', link: 'fotos', from: 'm2', createdAt: now - 86400000 }
+      },
       rewards: {
         r1: { title: 'Elegir la película del viernes', cost: 50, emoji: '🎬' },
         r2: { title: '30 min extra de videojuegos', cost: 80, emoji: '🎮' },

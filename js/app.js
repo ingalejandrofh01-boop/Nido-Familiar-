@@ -6,8 +6,9 @@ import { APP_NAME } from './config.js';
 import { THEMES, seasonFor, renderScene, renderDeco } from './themes.js';
 import { initFx, setFx, setIntensity, celebrate } from './fx.js';
 import { S, hooks, clearSubs, runCleanups, members } from './store.js';
-import { esc, toast, today0, parseDate } from './ui.js';
+import { esc, toast, today0, parseDate, avatar } from './ui.js';
 import { openSOS } from './views/sos.js';
+import * as notifCenter from './notifications.js';
 import * as auth from './views/auth.js';
 
 import home from './views/home.js';
@@ -37,7 +38,7 @@ export const NAV = [
   { sep: true },
   { r: 'listas', ico: '🛒', t: 'Compras' },
   { r: 'tareas', ico: '🧹', t: 'Tareas y puntos' },
-  { r: 'dinero', ico: '💰', t: 'Dinero', adult: true },
+  { r: 'dinero', ico: '💰', t: 'Dinero' },
   { r: 'notas', ico: '📝', t: 'Notas' },
   { r: 'donde', ico: '🔎', t: '¿Dónde está?' },
   { sep: true },
@@ -113,9 +114,10 @@ function shell() {
   const nav = NAV.filter(n => !n.adult || ['admin', 'adulto'].includes(S.me?.role));
   $app.innerHTML = `
     ${S.isDemo ? `<div class="demo-banner" data-act="demoInfo">🧪 Modo demo · toca para saber más</div>` : ''}
+    <header class="mtop"><a href="#/perfil/${S.me?.id}" class="mtop-me">${avatar(S.me, 'sm')}</a><div class="grow"><div class="brand-name" style="font-size:20px">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div>${S.isDemo ? '<span class="chip" data-act="demoInfo" style="font-size:11px">🧪 Demo</span>' : ''}<button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></header>
     <div class="shell">
       <aside class="sidebar">
-        <div class="brand"><span class="brand-logo">🪺</span><div><div class="brand-name">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div></div>
+        <div class="brand"><span class="brand-logo">🪺</span><div class="grow"><div class="brand-name">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div><button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></div>
         ${nav.map(n => n.sep ? '<div class="nav-sep"></div>' : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${n.ico}</span>${n.t}</a>`).join('')}
       </aside>
       <main class="main" id="view"></main>
@@ -146,6 +148,8 @@ function render() {
   catch (e) { console.error(e); view.innerHTML = `<div class="card empty"><div class="big">😵</div>Algo salió mal al mostrar esta sección.<br><small class="faint">${esc(e.message)}</small></div>`; }
   if (keep) { const el = document.getElementById(keep.id); if (el) { el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch { } } }
   V.after && V.after(view, params);
+  notifCenter.updateBadges();
+  const me = document.querySelector('.mtop-me'); if (me && S.me) me.innerHTML = avatar(S.me, 'sm');
 }
 hooks.rerender = () => { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); };
 
@@ -167,6 +171,7 @@ addEventListener('hashchange', onRoute);
 // ---------------- Delegación de eventos ----------------
 const globalActions = {
   sos: () => openSOS(),
+  notifs: () => notifCenter.openPanel(),
   demoInfo: () => auth.demoInfo()
 };
 document.addEventListener('click', e => {
@@ -192,8 +197,10 @@ document.addEventListener('submit', e => {
 const COLS = {
   members: {}, events: {}, exchanges: {}, albums: {}, photos: { orderBy: ['createdAt', 'asc'] },
   shopping: {}, chores: {}, expenses: {}, messages: { orderBy: ['createdAt', 'desc'], limit: 150 },
-  notes: {}, inventory: {}, backgrounds: {}, rewards: {}
+  notes: {}, inventory: {}, backgrounds: {}, rewards: {}, notifications: { orderBy: ['createdAt', 'desc'], limit: 80 }
 };
+// Colecciones privadas: families/{fid}/private/{uid}/...
+const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', txns: 'txns', myCats: 'categories', budgets: 'budgets', goals: 'goals' };
 function stopFamily() { familyUnsub && familyUnsub(); colUnsubs.forEach(u => u()); colUnsubs = []; familyUnsub = null; clearSubs(); }
 
 async function startFamily() {
@@ -203,10 +210,11 @@ async function startFamily() {
     if (!membersLoaded || !famLoaded) return;
     S.me = S.data.members.find(m => m.uid === S.user.uid) || null;
     if (!S.me) { auth.claimProfile(); started = false; return; }
-    if (!started) { started = true; shell(); lastRouteKey = ''; onRoute(); }
+    if (!started) { started = true; shell(); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); }
     else hooks.rerender();
   };
   familyUnsub = S.db.watchFamily(f => {
+    if (f.denied) { stopFamily(); toast('🔒 Ya no tienes acceso a esa familia'); auth.renderFamilySetup(); return; }
     const prevEff = S.family?.effects;
     S.family = f; famLoaded = true;
     if (f.effects !== prevEff) setIntensity(Number(localStorage_get('nido-effects-local') ?? f.effects ?? 1));
@@ -219,12 +227,20 @@ async function startFamily() {
       S.data[name] = rows;
       if (name === 'members') { membersLoaded = true; const had = !!S.me; maybeStart(); if (had) return; return; }
       if (name === 'backgrounds') refreshTheme();
+      if (name === 'notifications') notifCenter.onData(rows);
       if (started) hooks.rerender();
     }));
+  }
+  for (const [key, col] of Object.entries(PRIVATE)) {
+    colUnsubs.push(S.db.watch(`private/${S.user.uid}/${col}`, {}, rows => { S.data[key] = rows; if (started) hooks.rerender(); }));
   }
 }
 export async function enterFamily() { await startFamily(); }
 auth.setEnterFamily(enterFamily);
+
+// ---------------- Instalar como app ----------------
+addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installPrompt = e; hooks.rerender(); });
+addEventListener('appinstalled', () => { S.installPrompt = null; toast('📲 ¡Nido quedó instalada!'); });
 
 // ---------------- Arranque ----------------
 async function boot() {

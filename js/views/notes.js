@@ -1,5 +1,5 @@
 // 📝 Notas familiares  ·  🔎 ¿Dónde está todo? (inventario de la casa)
-import { S, hooks } from '../store.js';
+import { S, hooks, priv, allNotes } from '../store.js';
 import { esc, modal, toast, compressImage, pickFiles } from '../ui.js';
 
 const NCATS = { Casa: '🏠', Auto: '🚗', Viaje: '✈️', Salud: '🩺', Escuela: '🎒', Contactos: '📇', Otros: '📌' };
@@ -12,35 +12,38 @@ function noteForm(n = null) {
     body: `<div class="field"><label>Título</label><input class="input" name="title" required value="${esc(n?.title || '')}" placeholder="Wi-Fi, plomero, seguro del auto…"></div>
       <div class="field"><label>Categoría</label><div class="chips">${Object.entries(NCATS).map(([k, e]) => `<label class="chip chip-btn"><input type="radio" name="category" value="${k}" ${(n?.category || 'Casa') === k ? 'checked' : ''}> ${e} ${k}</label>`).join('')}</div></div>
       <div class="field"><label>Contenido</label><textarea class="input" name="body" rows="6">${esc(n?.body || '')}</textarea></div>
-      <label class="row small bold"><input type="checkbox" name="secret" ${n?.secret ? 'checked' : ''}> 🔒 Ocultar hasta tocar (contraseñas, datos sensibles)</label>`,
+      <label class="row small bold"><input type="checkbox" name="secret" ${n?.secret ? 'checked' : ''}> 🙈 Ocultar hasta tocar (contraseñas, datos sensibles)</label>
+      <label class="toggle mt-s"><input type="checkbox" name="private" ${n?._private ? 'checked' : ''}> 🔒 Nota privada: sólo yo la veo</label>`,
     submit: async d => {
       const data = { title: d.title.trim(), category: d.category || 'Otros', body: d.body, secret: !!d.secret, by: S.me.id };
       if (!data.title) return false;
-      if (n) await S.db.update('notes', n.id, data); else await S.db.add('notes', data);
+      const isPriv = !!d.private, path = isPriv ? priv('notes') : 'notes';
+      if (n && !!n._private === isPriv) await S.db.update(path, n.id, data);
+      else { if (n) await S.db.remove(n._private ? priv('notes') : 'notes', n.id); await S.db.add(path, data); }
     },
-    danger: n ? { label: '🗑️', confirm: '¿Eliminar nota?', action: () => S.db.remove('notes', n.id) } : null
+    danger: n ? { label: '🗑️', confirm: '¿Eliminar nota?', action: () => S.db.remove(n._private ? priv('notes') : 'notes', n.id) } : null
   });
 }
 
 export const notes = {
   render() {
-    const cats = ['Todas', ...Object.keys(NCATS)];
-    const list = S.data.notes.filter(n => ncat === 'Todas' || n.category === ncat).sort((a, b) => a.title.localeCompare(b.title));
+    const cats = ['Todas', 'Privadas', ...Object.keys(NCATS)];
+    const list = allNotes().filter(n => ncat === 'Todas' || (ncat === 'Privadas' ? n._private : n.category === ncat)).sort((a, b) => a.title.localeCompare(b.title));
     return `
       <div class="page-head"><div><h1>Notas familiares</h1><p>Wi-Fi, contactos, seguros, reservaciones… todo a la mano</p></div>
         <button class="btn primary" data-act="new">＋ Nueva nota</button></div>
-      <div class="chips mb">${cats.map(c => `<button class="chip chip-btn ${ncat === c ? 'sel' : ''}" data-act="cat" data-c="${c}">${NCATS[c] || '📚'} ${c}</button>`).join('')}</div>
+      <div class="chips mb">${cats.map(c => `<button class="chip chip-btn ${ncat === c ? 'sel' : ''}" data-act="cat" data-c="${c}">${c === 'Privadas' ? '🔒' : NCATS[c] || '📚'} ${c}</button>`).join('')}</div>
       ${list.length ? `<div class="grid auto">${list.map(n => `<section class="card deco">
-        <div class="card-title"><h3>${NCATS[n.category] || '📌'} ${esc(n.title)}</h3><div class="row"><button class="icon-btn" data-act="copy" data-id="${n.id}" title="Copiar">📋</button><button class="icon-btn" data-act="edit" data-id="${n.id}" title="Editar">✏️</button></div></div>
+        <div class="card-title"><h3>${n._private ? '🔒' : NCATS[n.category] || '📌'} ${esc(n.title)}</h3><div class="row"><button class="icon-btn" data-act="copy" data-id="${n.id}" title="Copiar">📋</button><button class="icon-btn" data-act="edit" data-id="${n.id}" title="Editar">✏️</button></div></div>
         <div class="${n.secret && !shown.has(n.id) ? 'secret' : ''}" ${n.secret ? `data-act="reveal" data-id="${n.id}" style="cursor:pointer"` : ''} style="white-space:pre-wrap;font-weight:600">${esc(n.body || '')}</div>
         ${n.secret && !shown.has(n.id) ? '<div class="tiny muted mt-s">🔒 Toca para ver</div>' : ''}</section>`).join('')}</div>` : '<div class="card empty"><div class="big">📝</div>Sin notas en esta categoría</div>'}`;
   },
   actions: {
     new() { noteForm(); },
-    edit(el) { noteForm(S.data.notes.find(n => n.id === el.dataset.id)); },
+    edit(el) { noteForm(allNotes().find(n => n.id === el.dataset.id)); },
     cat(el) { ncat = el.dataset.c; hooks.rerender(); },
     reveal(el) { const id = el.dataset.id; shown.has(id) ? shown.delete(id) : shown.add(id); hooks.rerender(); },
-    async copy(el) { const n = S.data.notes.find(x => x.id === el.dataset.id); try { await navigator.clipboard.writeText(n.body || ''); toast('📋 Copiado'); } catch { toast('No se pudo copiar'); } }
+    async copy(el) { const n = allNotes().find(x => x.id === el.dataset.id); try { await navigator.clipboard.writeText(n.body || ''); toast('📋 Copiado'); } catch { toast('No se pudo copiar'); } }
   }
 };
 

@@ -37,8 +37,24 @@ export function memberForm(m = null) {
       } else await S.db.add('members', { ...data, role: data.role || 'nino', points: 0 });
       toast('✅ Guardado');
     },
-    danger: m && isAdmin() && m.id !== S.me.id ? { label: '🗑️ Quitar', confirm: `¿Quitar a ${esc(m.name)} de la familia?`, action: async () => { await S.db.remove('members', m.id); hooks.go('familia'); } } : null
+    danger: m && isAdmin() && m.id !== S.me.id ? { label: '🗑️ Quitar', confirm: `¿Quitar a ${esc(m.name)} de la familia?${m.uid ? ' También perderá el acceso a la app.' : ''}`, action: async () => { if (m.uid) await revokeUid(m.uid); await S.db.remove('members', m.id); hooks.go('familia'); } } : null
   });
+}
+
+async function revokeUid(uid) {
+  const f = S.family || {}; const roles = { ...(f.roles || {}) }; delete roles[uid];
+  await S.db.updateFamily({ memberUids: (f.memberUids || []).filter(u => u !== uid), roles });
+}
+
+function accessBox() {
+  if (!isAdmin()) return '';
+  const list = S.family?.allowedEmails || [];
+  const joined = new Set(S.data.members.filter(m => m.uid).map(m => (m.email || '').toLowerCase()));
+  return `<section class="card deco"><div class="card-title"><h3>🔒 Correos con acceso</h3><span class="chip">${list.length}</span></div>
+    <p class="small muted bold">Sólo estos correos pueden unirse a la familia (aunque alguien más consiga el código). Deben entrar con esa misma cuenta de Google o correo.</p>
+    <form data-submit="addEmail" class="row mt"><input class="input grow" id="email-input" name="email" type="email" placeholder="correo@gmail.com" autocomplete="off"><button class="btn primary">Agregar</button></form>
+    <div class="list mt">${list.map(e => `<div class="item"><span class="emoji">📧</span><div class="grow bold ellipsis">${esc(e)}</div>${joined.has(e) || e === S.user?.email ? '<span class="chip accent">✅ Ya entró</span>' : '<span class="chip">⏳ Pendiente</span>'}${e !== S.user?.email ? `<button class="link tiny" data-act="delEmail" data-e="${esc(e)}">Quitar</button>` : '<span class="tiny muted">tú</span>'}</div>`).join('') || '<div class="empty small">Agrega los correos de tu familia</div>'}</div>
+    <p class="tiny muted mt-s">Quitar un correo impide que se una en el futuro. Para sacar a alguien que ya entró, quítalo también desde su perfil → Editar datos → Quitar.</p></section>`;
 }
 
 function inviteBox() {
@@ -60,10 +76,20 @@ export const familia = {
         ${avatar(m, 'xl')}<h3 style="font-size:20px;font-weight:900;margin-top:12px">${esc(m.name)}</h3>
         <div class="small muted bold">${esc(m.relation || '')}${nb ? ` · ${nb.age - (nb.days === 0 ? 0 : 1)} años` : ''}</div>
         <div class="chips mt" style="justify-content:center"><span class="chip">${ROLES[m.role] || 'Integrante'}</span>${nb ? `<span class="chip accent">🎂 ${nb.days === 0 ? '¡Hoy!' : `en ${nb.days} días`}</span>` : ''}${m.uid ? '<span class="chip">📱 Con cuenta</span>' : ''}</div></a>`; }).join('')}</div>
-      <div class="mt">${inviteBox()}</div>`;
+      <div class="grid g2 mt">${inviteBox()}${accessBox()}</div>`;
   },
   actions: {
     add() { memberForm(); },
+    async addEmail(f) {
+      const i = f.querySelector('input'); const e = i.value.trim().toLowerCase();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e)) { toast('Escribe un correo válido'); return; }
+      const list = S.family?.allowedEmails || [];
+      if (list.includes(e)) { toast('Ese correo ya está'); return; }
+      i.value = ''; await S.db.updateFamily({ allowedEmails: [...list, e] }); toast('✅ Correo autorizado');
+    },
+    async delEmail(el) {
+      const e = el.dataset.e; await S.db.updateFamily({ allowedEmails: (S.family?.allowedEmails || []).filter(x => x !== e) }); toast('Correo quitado');
+    },
     async copyCode() { try { await navigator.clipboard.writeText(S.family.code); toast('📋 Código copiado'); } catch { toast(S.family.code); } }
   }
 };

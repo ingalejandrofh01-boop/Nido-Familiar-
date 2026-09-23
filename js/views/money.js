@@ -1,6 +1,8 @@
 // 💰 Dinero: gastos compartidos, presupuesto y cuentas entre familiares
 import { S, hooks, members, member, isAdult, isAdmin } from '../store.js';
 import { esc, avatar, money, isoDate, modal, toast, memberPicker, MONTHS, fmtShort } from '../ui.js';
+import { renderMyFinance, financeActions } from './myfinance.js';
+let mtab = null;
 
 export const CATS = {
   casa: ['🏠', 'Casa', '#8b5cf6'], super: ['🛒', 'Supermercado', '#22c55e'], comida: ['🍔', 'Comida', '#f97316'],
@@ -50,7 +52,15 @@ function balances() {
 
 export default {
   render() {
-    if (!isAdult()) return `<div class="card empty"><div class="big">🔒</div>Esta sección es sólo para adultos de la familia.</div>`;
+    if (!mtab) mtab = 'personal';
+    if (!isAdult()) mtab = 'personal';
+    const tabs = `<div class="page-head"><div><h1>Dinero</h1><p>${mtab === 'personal' ? 'Tus finanzas personales, privadas sólo para ti' : 'Gastos compartidos, presupuesto y cuentas claras'}</p></div>
+      ${mtab === 'familia' ? '<button class="btn primary" data-act="new">＋ Gasto familiar</button>' : ''}</div>
+      <div class="seg mb"><button class="${mtab === 'personal' ? 'on' : ''}" data-act="mtab" data-t="personal">🙋 Mis finanzas</button>${isAdult() ? `<button class="${mtab === 'familia' ? 'on' : ''}" data-act="mtab" data-t="familia">👨‍👩‍👧 Familiar</button>` : ''}</div>`;
+    if (mtab === 'personal') return tabs + renderMyFinance();
+    return tabs + this.renderFamily();
+  },
+  renderFamily() {
     if (!ym) ym = isoDate().slice(0, 7);
     const [y, m] = ym.split('-').map(Number);
     const list = S.data.expenses.filter(e => (e.date || '').startsWith(ym) && e.category !== 'ajuste').sort((a, b) => b.date.localeCompare(a.date));
@@ -62,8 +72,6 @@ export default {
     const debts = balances();
     const pct = budget ? Math.min(100, total / budget * 100) : 0;
     return `
-      <div class="page-head"><div><h1>Dinero familiar</h1><p>Gastos compartidos, presupuesto y cuentas claras</p></div>
-        <button class="btn primary" data-act="new">＋ Nuevo gasto</button></div>
       <div class="row mb"><button class="icon-btn" data-act="prev">‹</button><h2 style="font-size:22px;font-weight:900;text-transform:capitalize;min-width:180px;text-align:center">${MONTHS[m - 1]} ${y}</h2><button class="icon-btn" data-act="next">›</button></div>
       <div class="grid g3">
         <section class="card deco stat"><span class="l">Total del mes</span><span class="v">${money(total)}</span><span class="tiny muted">${list.length} movimientos</span></section>
@@ -82,6 +90,8 @@ export default {
         <div class="list">${list.map(e => { const [em, n] = CATS[e.category] || CATS.otros; return `<div class="item clickable" data-act="edit" data-id="${e.id}"><span class="emoji">${em}</span><div class="grow"><div class="bold ellipsis">${esc(e.title)}</div><div class="tiny muted">${fmtShort(e.date)} · ${n} · pagó ${esc(member(e.paidBy)?.name || '?')}${e.split?.length ? ` · ÷${e.split.length}` : ''}</div></div><b>${money(e.amount)}</b></div>`; }).join('') || '<div class="empty">Sin movimientos</div>'}</div></section>`;
   },
   actions: {
+    ...financeActions,
+    mtab(el) { mtab = el.dataset.t; hooks.rerender(); },
     new() { expenseForm(); },
     edit(el) { expenseForm(S.data.expenses.find(e => e.id === el.dataset.id)); },
     prev() { const [y, m] = ym.split('-').map(Number); const d = new Date(y, m - 2, 1); ym = isoDate(d).slice(0, 7); hooks.rerender(); },

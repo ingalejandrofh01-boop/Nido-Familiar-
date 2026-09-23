@@ -1,5 +1,5 @@
 // 🛒 Compras compartidas  ·  🧹 Tareas del hogar con puntos y premios
-import { S, hooks, members, member, isAdult } from '../store.js';
+import { S, hooks, members, member, isAdult, isAdmin, notify } from '../store.js';
 import { esc, avatar, relDay, isoDate, today0, modal, toast, memberPicker, confirmBox, parseDate } from '../ui.js';
 
 let shopList = 'Todas';
@@ -56,6 +56,7 @@ function choreForm(c = null) {
       const data = { title: d.title.trim(), assignee: d.assignee, due: d.due, points: Number(d.points) || 0, repeat: d.repeat || 'none' };
       if (!data.title) return false;
       if (c) await S.db.update('chores', c.id, data); else await S.db.add('chores', { ...data, done: false });
+      if (!c || c.assignee !== data.assignee) notify({ to: [data.assignee], icon: '🧹', title: `Te asignaron: ${data.title}`, body: `${relDay(data.due)} · +${data.points} puntos`, link: 'tareas' });
     },
     danger: c ? { label: '🗑️', confirm: '¿Eliminar tarea?', action: () => S.db.remove('chores', c.id) } : null
   });
@@ -127,6 +128,7 @@ export const chores = {
       if (!(await confirmBox(`¿Canjear "${esc(r.title)}" por ${r.cost} puntos?`, 'Canjear 🎁'))) return;
       await S.db.update('members', S.me.id, { points: (S.me.points || 0) - r.cost });
       await S.db.add('messages', { text: `🎁 ${S.me.name} canjeó: ${r.title}`, author: S.me.id, kind: 'reward' });
+      notify({ to: members().filter(m => ['admin', 'adulto'].includes(m.role)).map(m => m.id), icon: '🎁', title: `${S.me.name} canjeó un premio`, body: `${r.title} (${r.cost} pts)`, link: 'tareas' });
       hooks.celebrate(innerWidth / 2, innerHeight / 3, 'confetti'); toast('🎁 ¡Premio canjeado! Se avisó en el chat');
     }
   }

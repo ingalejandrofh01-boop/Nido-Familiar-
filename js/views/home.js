@@ -1,5 +1,5 @@
 // 🏠 Inicio / resumen familiar
-import { S, hooks, members, member, isAdult, onCleanup } from '../store.js';
+import { S, hooks, members, member, isAdult, onCleanup, findEvent } from '../store.js';
 import { esc, avatar, fmtDate, fmtTime, relDay, today0, isoDate, nextBirthday, money, parseDate, timeAgo } from '../ui.js';
 import { THEMES, nextHoliday, seasonFor } from '../themes.js';
 import { occurrences, EVENT_TYPES } from '../events.js';
@@ -58,7 +58,7 @@ export default {
       const href = o.exchange ? `#/intercambio/${o.exchange.id}` : o.member ? `#/perfil/${o.member.id}` : '';
       return `<div class="item ${href || o.ev ? 'clickable' : ''}" ${href ? `onclick="location.hash='${href}'"` : o.ev ? `data-act="editEvent" data-id="${o.ev.id}"` : ''}>
         <span class="emoji">${T.e}</span>
-        <div class="grow"><div class="bold ellipsis">${esc(o.title)}${o.years && o.type === 'cumple' ? ` · ${o.years} años` : ''}</div>
+        <div class="grow"><div class="bold ellipsis">${o.ev?._private ? '🔒 ' : ''}${esc(o.title)}${o.years && o.type === 'cumple' ? ` · ${o.years} años` : ''}</div>
         <div class="small muted">${relDay(o.date)}${o.time ? ' · ' + fmtTime(o.time) : ''}${o.ev?.location ? ' · ' + esc(o.ev.location) : ''}</div></div>
         <div class="avatars">${people.slice(0, 4).map(p => avatar(p, 'sm')).join('')}</div></div>`;
     };
@@ -131,7 +131,7 @@ export default {
   after(root) { startCountdowns(root); },
   actions: {
     newEvent(el, e) { openEventForm(); },
-    editEvent(el) { openEventForm(S.data.events.find(e => e.id === el.dataset.id)); },
+    editEvent(el) { openEventForm(findEvent(el.dataset.id)); },
     party() { for (let i = 0; i < 5; i++) setTimeout(() => hooks.celebrate(innerWidth * (0.2 + Math.random() * 0.6), innerHeight * (0.2 + Math.random() * 0.3), 'confetti'), i * 250); }
   }
 };

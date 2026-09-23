@@ -28,6 +28,7 @@ function panel() {
     case 'ojos': return `
       <div class="ava-sec"><h4>Forma de los ojos</h4>${optTiles('eyes', FACE_VB)}</div>
       <div class="ava-sec"><h4>Color de ojos</h4>${swatches('eyeColor', EYE_COLORS)}</div>
+      <div class="ava-sec"><h4>Pestañas</h4><label class="toggle"><input type="checkbox" ${draft.lashes ? 'checked' : ''} data-change="toggle" data-k="lashes"> ${draft.lashes ? 'Con pestañas ✨' : 'Sin pestañas'}</label></div>
       <div class="ava-sec"><h4>Cejas</h4>${optTiles('brows', FACE_VB)}</div>`;
     case 'boca': return `
       <div class="ava-sec"><h4>Expresión</h4>${optTiles('mouth', FACE_VB)}</div>
@@ -56,7 +57,7 @@ export default {
     const seasons = [['', '🙂 Normal'], ['navidad', '🎄'], ['halloween', '🎃'], ['muertos', '💀'], ['patrias', '🇲🇽'], ['anio_nuevo', '🎆'], ['invierno', '❄️'], ['verano', '☀️'], ['amor', '💘'], ['bday', '👑']];
     return `
       <a class="link" href="#/perfil/${m.id}">‹ ${esc(m.name)}</a>
-      <div class="page-head mt"><div><h1>Crea tu avatar</h1><p>Elige tu animalito y dale tu estilo 🐾</p></div></div>
+      <div class="page-head mt"><div><h1>Crea tu avatar</h1><p>${Object.keys(SPECIES).length} animalitos para elegir y darles tu estilo 🐾</p></div></div>
       <div class="ava-editor">
         <section class="card deco ava-stage">
           <span class="avatar ava xxl live">${renderAvatar(draft, previewSeason === 'bday' ? { crown: true } : previewSeason ? { season: previewSeason } : { raw: true })}</span>

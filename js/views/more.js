@@ -4,7 +4,7 @@ import { esc } from '../ui.js';
 import { THEMES } from '../themes.js';
 
 const ITEMS = [
-  ['chat', '💬', 'Chat y avisos'], ['listas', '🛒', 'Compras'], ['tareas', '🧹', 'Tareas y puntos'], ['dinero', '💰', 'Dinero', true],
+  ['chat', '💬', 'Chat y avisos'], ['listas', '🛒', 'Compras'], ['tareas', '🧹', 'Tareas y puntos'], ['dinero', '💰', 'Dinero'],
   ['notas', '📝', 'Notas'], ['donde', '🔎', '¿Dónde está?'], ['familia', '👨‍👩‍👧‍👦', 'Familia'], ['ajustes', '⚙️', 'Ajustes']
 ];
 export default {

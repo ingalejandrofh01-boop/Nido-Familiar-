@@ -1,5 +1,5 @@
 // 📅 Agenda: calendario, cumpleaños, fechas importantes y recordatorios
-import { S, hooks, members, member } from '../store.js';
+import { S, hooks, members, member, priv, findEvent, notify } from '../store.js';
 import { esc, avatar, fmtDate, fmtTime, today0, isoDate, parseDate, modal, memberPicker, toast, MONTHS, relDay } from '../ui.js';
 import { occurrences, EVENT_TYPES, REPEATS } from '../events.js';
 
@@ -21,14 +21,21 @@ export function openEventForm(ev = null, presetDate = null) {
       <div class="field"><label>Se repite</label><select class="input" name="repeat">${Object.entries(REPEATS).map(([k, v]) => `<option value="${k}" ${e.repeat === k ? 'selected' : ''}>${v}</option>`).join('')}</select></div></div>
       <div class="field"><label>¿Quiénes participan?</label>${memberPicker('participants', members(), e.participants || [])}</div>
       <div class="field"><label>Lugar</label><input class="input" name="location" value="${esc(e.location || '')}" placeholder="Opcional"></div>
-      <div class="field"><label>Notas</label><textarea class="input" name="notes" placeholder="Opcional">${esc(e.notes || '')}</textarea></div>`,
+      <div class="field"><label>Notas</label><textarea class="input" name="notes" placeholder="Opcional">${esc(e.notes || '')}</textarea></div>
+      <label class="toggle"><input type="checkbox" name="private" ${e._private ? 'checked' : ''}> 🔒 Sólo yo lo veo (evento privado)</label>`,
     submit: async (d) => {
       const data = { title: d.title.trim(), type: d.type || 'familiar', date: d.date, time: d.time || '', endDate: d.endDate || '', repeat: d.repeat, participants: d.participants || [], location: d.location, notes: d.notes };
       if (!data.title || !data.date) { toast('Escribe un título y fecha'); return false; }
-      if (ev) await S.db.update('events', ev.id, data); else await S.db.add('events', { ...data, createdBy: S.me.id });
-      toast(ev ? '✅ Evento actualizado' : '📅 Evento agregado');
+      const isPriv = !!d.private, path = isPriv ? priv('events') : 'events';
+      if (ev && !!ev._private === isPriv) await S.db.update(path, ev.id, data);
+      else {
+        if (ev) await S.db.remove(ev._private ? priv('events') : 'events', ev.id);
+        await S.db.add(path, { ...data, createdBy: S.me.id });
+        if (!ev && !isPriv) notify({ to: data.participants.length ? data.participants : 'all', icon: (EVENT_TYPES[data.type] || {}).e || '📅', title: `Nuevo evento: ${data.title}`, body: `${fmtDate(data.date, { weekday: true })}${data.time ? ' · ' + fmtTime(data.time) : ''}`, link: 'agenda' });
+      }
+      toast(ev ? '✅ Evento actualizado' : isPriv ? '🔒 Evento privado agregado' : '📅 Evento agregado');
     },
-    danger: ev ? { label: '🗑️ Eliminar', confirm: '¿Eliminar este evento?', action: () => S.db.remove('events', ev.id) } : null
+    danger: ev ? { label: '🗑️ Eliminar', confirm: '¿Eliminar este evento?', action: () => S.db.remove(ev._private ? priv('events') : 'events', ev.id) } : null
   });
 }
 
@@ -59,7 +66,7 @@ export default {
       const people = (o.ev?.participants || (o.member ? [o.member.id] : [])).map(member).filter(Boolean);
       const attrs = o.ev ? `data-act="edit" data-id="${o.ev.id}"` : o.exchange ? `onclick="location.hash='#/intercambio/${o.exchange.id}'"` : o.member ? `onclick="location.hash='#/perfil/${o.member.id}'"` : '';
       return `<div class="item clickable" ${attrs}><span class="ev-dot" style="--c:${T.c}"></span><span class="emoji">${T.e}</span>
-        <div class="grow"><div class="bold ellipsis">${esc(o.title)}${o.years && (o.type === 'cumple' || o.type === 'aniversario') ? ` · ${o.years} ${o.type === 'cumple' ? 'años' : 'aniversario'}` : ''}</div>
+        <div class="grow"><div class="bold ellipsis">${o.ev?._private ? '🔒 ' : ''}${esc(o.title)}${o.years && (o.type === 'cumple' || o.type === 'aniversario') ? ` · ${o.years} ${o.type === 'cumple' ? 'años' : 'aniversario'}` : ''}</div>
         <div class="small muted">${o.time ? fmtTime(o.time) : 'Todo el día'}${o.ev?.repeat && o.ev.repeat !== 'none' ? ' · 🔁 ' + REPEATS[o.ev.repeat] : ''}${o.ev?.location ? ' · 📍 ' + esc(o.ev.location) : ''}</div></div>
         <div class="avatars">${people.slice(0, 5).map(p => avatar(p, 'sm')).join('')}</div></div>`;
     };
@@ -89,6 +96,6 @@ export default {
     today() { const t = today0(); cursor = new Date(t.getFullYear(), t.getMonth(), 1); selected = isoDate(t); hooks.rerender(); },
     filter(el) { filter = el.dataset.f; hooks.rerender(); },
     new() { openEventForm(null, selected); },
-    edit(el) { openEventForm(S.data.events.find(e => e.id === el.dataset.id)); }
+    edit(el) { openEventForm(findEvent(el.dataset.id)); }
   }
 };

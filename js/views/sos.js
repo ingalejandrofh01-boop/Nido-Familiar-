@@ -1,5 +1,5 @@
 // 🚨 Botón de emergencia
-import { S, members } from '../store.js';
+import { S, members, notify } from '../store.js';
 import { esc, avatar, modal, toast } from '../ui.js';
 import { getLocation, mapsLink } from './chat.js';
 
@@ -31,7 +31,8 @@ export function openSOS() {
     const extra = m.el.querySelector('#sos-msg').value.trim();
     const text = `🚨 SOS · ${type}: ${S.me.name} necesita ayuda.${extra ? ' ' + extra : ''}${loc ? ' 📍 ' + mapsLink(loc) : ''}`;
     try { await S.db.add('messages', { text, author: S.me.id, pinned: true, kind: 'sos', createdAt: Date.now() }); } catch (e) { console.error(e); }
-    toast('🚨 Alerta enviada al chat familiar');
+    notify({ icon: '🚨', type: 'urgent', title: `🚨 ${S.me.name} necesita ayuda`, body: `${type}${extra ? ' · ' + extra : ''}`, link: 'chat' });
+    toast('🚨 Alerta enviada a toda la familia');
     m.el.querySelector('.modal-body').innerHTML = `<div class="center"><div style="font-size:60px">📣</div><h3 style="font-size:20px;font-weight:900">Alerta publicada en el chat</h3>
       <p class="muted bold">Para que les llegue al instante, mándala también por WhatsApp:</p>
       <a class="btn primary lg block mt" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(text)}">💬 Enviar por WhatsApp</a>

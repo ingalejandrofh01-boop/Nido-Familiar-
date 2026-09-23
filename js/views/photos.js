@@ -1,5 +1,5 @@
 // 📖 Libro familiar: capítulos (álbumes), fotos tipo polaroid y libro con páginas que se voltean
-import { S, hooks, member, onCleanup } from '../store.js';
+import { S, hooks, member, onCleanup, notify } from '../store.js';
 import { esc, fmtDate, isoDate, modal, toast, compressImage, pickFiles, confirmBox } from '../ui.js';
 import { THEMES } from '../themes.js';
 
@@ -45,6 +45,7 @@ async function uploadTo(albumId) {
     } catch (e) { console.error(e); toast('⚠️ No se pudo subir ' + f.name); }
   }
   toast(`📸 ${n} foto${n === 1 ? '' : 's'} agregada${n === 1 ? '' : 's'}`);
+  if (n) { const a = S.data.albums.find(x => x.id === albumId); notify({ icon: '📸', title: `${S.me.name} subió ${n} foto${n === 1 ? '' : 's'}`, body: a ? `Al capítulo “${a.title}”` : '', link: 'album/' + albumId }); }
 }
 
 // ---------- Visor ----------
