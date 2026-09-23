@@ -1,17 +1,14 @@
 // ============================================================
-//  CONFIGURACIÓN DE FIREBASE
-//  1. Entra a https://console.firebase.google.com y crea un proyecto.
-//  2. Agrega una "App web" (icono </>) y copia aquí los valores.
-//  3. Mientras apiKey esté vacío, la app corre en MODO DEMO
-//     (los datos se guardan sólo en este navegador).
+//  CONFIGURACIÓN DE FIREBASE (proyecto: nido-familiar-fd77f)
+//  Si apiKey queda vacío, la app corre en MODO DEMO.
 // ============================================================
 export const firebaseConfig = {
-  apiKey: "",
-  authDomain: "",
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: "",
-  appId: ""
+  apiKey: "AIzaSyAuxulOYtzPKg70O8FWsFnqFabjwiL_dX4",
+  authDomain: "nido-familiar-fd77f.firebaseapp.com",
+  projectId: "nido-familiar-fd77f",
+  storageBucket: "nido-familiar-fd77f.firebasestorage.app",
+  messagingSenderId: "36943724137",
+  appId: "1:36943724137:web:7571eb0c61ad65f54f2cf8"
 };
 
 // Nombre que aparece en la app
