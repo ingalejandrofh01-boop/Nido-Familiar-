@@ -55,7 +55,7 @@ export default {
       const d = new Date(start); d.setDate(start.getDate() + i); const k = isoDate(d);
       const evs = (byDay[k] || []).filter(o => o.ev?.repeat !== 'daily');
       cells += `<div class="day ${d.getMonth() !== cursor.getMonth() ? 'out' : ''} ${k === todayIso ? 'today' : ''} ${k === selected ? 'sel' : ''}" data-act="pick" data-d="${k}">
-        <span class="n">${d.getDate()}</span><div class="evs">${evs.slice(0, 3).map(o => `<span class="ev" style="--c:${(EVENT_TYPES[o.type] || EVENT_TYPES.familiar).c}">${(EVENT_TYPES[o.type] || {}).e || ''} ${esc(o.title)}</span>`).join('')}${evs.length > 3 ? `<span class="tiny muted">+${evs.length - 3}</span>` : ''}</div></div>`;
+        <span class="n">${d.getDate()}</span><div class="evs">${evs.slice(0, 3).map(o => `<span class="ev ${o.type}" style="--c:${(EVENT_TYPES[o.type] || EVENT_TYPES.familiar).c}" title="${esc(o.title)}"><i class="e">${(EVENT_TYPES[o.type] || {}).e || ''}</i> ${esc(o.type === 'cumple' && o.member ? String(o.member.name || '').split(' ')[0] : o.title)}</span>`).join('')}${evs.length > 3 ? `<span class="tiny muted">+${evs.length - 3}</span>` : ''}</div></div>`;
     }
     const dayList = (byDay[selected] || []);
     const horizon = new Date(t0); horizon.setDate(horizon.getDate() + 60);

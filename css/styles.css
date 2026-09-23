@@ -301,7 +301,7 @@ body[data-theme="anio_nuevo"] .card { box-shadow: var(--shadow), 0 0 0 1px rgba(
 /* ---------------- Calendario ---------------- */
 .cal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px; }
 .cal-head h2 { font-size: 22px; font-weight: 900; text-transform: capitalize; }
-.cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
 .cal .dow { text-align: center; font-size: 12px; font-weight: 800; color: var(--muted); padding: 4px 0; }
 .cal .day { min-height: 74px; border-radius: 14px; padding: 6px; background: var(--hover); cursor: pointer; display: flex; flex-direction: column; gap: 3px; transition: .15s; border: 2px solid transparent; overflow: hidden; }
 .cal .day:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
@@ -309,8 +309,12 @@ body[data-theme="anio_nuevo"] .card { box-shadow: var(--shadow), 0 0 0 1px rgba(
 .cal .day.today { border-color: var(--accent); }
 .cal .day.sel { background: color-mix(in srgb, var(--accent) 28%, transparent); }
 .cal .day .n { font-weight: 900; font-size: 14px; }
-.cal .ev { font-size: 10.5px; font-weight: 800; padding: 1px 5px; border-radius: 6px; background: var(--c); color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 640px) { .cal { gap: 3px; } .cal .day { min-height: 52px; padding: 4px; border-radius: 10px; } .cal .ev { font-size: 0; height: 6px; width: 6px; padding: 0; border-radius: 50%; display: inline-block; } .cal .evs { display: flex; gap: 2px; flex-wrap: wrap; } }
+.cal .day { container-type: inline-size; }
+.cal .ev .e { font-style: normal; }
+@container (max-width: 84px) { .cal .ev:not(.cumple) .e { display: none; } }
+.cal .evs { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cal .ev { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; font-size: 10.5px; line-height: 1.25; font-weight: 800; padding: 2px 4px; letter-spacing: -.1px; border-radius: 6px; background: var(--c); color: #fff; overflow: hidden; overflow-wrap: normal; word-break: normal; align-self: stretch; text-overflow: ellipsis; box-shadow: 0 2px 6px color-mix(in srgb, var(--c) 40%, transparent); }
+@media (max-width: 640px) { .cal { gap: 3px; } .cal .day { min-height: 52px; padding: 4px; border-radius: 10px; } .cal .ev { font-size: 0; height: 6px; width: 6px; padding: 0; border-radius: 50%; display: inline-block; box-shadow: none; } .cal .evs { flex-direction: row; gap: 2px; flex-wrap: wrap; } }
 .ev-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--c); flex-shrink: 0; }
 
 /* ---------------- Fotos / Libro ---------------- */
