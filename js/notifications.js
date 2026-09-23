@@ -62,6 +62,7 @@ export function todayItems() {
   if (!S.me) return [];
   const t0 = today0(), tIso = isoDate(t0), items = [];
   for (const m of S.data.members) {
+    if (m.treeOnly) continue;
     const nb = nextBirthday(m); if (!nb) continue;
     if (nb.days === 0) items.push({ key: `bd-${m.id}-${tIso}`, icon: '🎂', title: m.id === S.me.id ? '¡Feliz cumpleaños! 🥳' : `Hoy cumple ${m.name}`, body: m.id === S.me.id ? 'Toda la familia te celebra' : `${nb.age} años · ¡felicítalo!`, link: 'perfil/' + m.id });
     else if (nb.days === 1) items.push({ key: `bd1-${m.id}-${tIso}`, icon: '🎁', title: `Mañana cumple ${m.name}`, body: '¿Ya tienes su regalo?', link: 'perfil/' + m.id });
@@ -71,6 +72,9 @@ export function todayItems() {
     const ps = o.ev?.participants || [];
     if (o.ev && ps.length && !ps.includes(S.me.id)) continue;
     items.push({ key: `ev-${o.ev?.id || o.exchange?.id}-${tIso}`, icon: o.type === 'intercambio' ? '🎁' : '📅', title: `Hoy: ${o.title}`, body: o.time ? fmtTime(o.time) : 'Todo el día', link: o.exchange ? 'intercambio/' + o.exchange.id : 'agenda' });
+  }
+  for (const c of S.data.capsules || []) {
+    if (c.openAt === tIso && (c.to === 'all' || (c.to || []).includes(S.me.id))) items.push({ key: `cap-${c.id}`, icon: '⏳', title: `¡Hoy se abre una cápsula del tiempo!`, body: c.title, link: 'capsula' });
   }
   const chores = S.data.chores.filter(c => c.assignee === S.me.id && !c.done && (c.due || tIso) <= tIso);
   if (chores.length) items.push({ key: `ch-${tIso}-${chores.length}`, icon: '🧹', title: `Tienes ${chores.length} tarea${chores.length > 1 ? 's' : ''} para hoy`, body: chores.map(c => c.title).slice(0, 3).join(', '), link: 'tareas' });

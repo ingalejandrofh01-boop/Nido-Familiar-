@@ -2,7 +2,7 @@
   "name": "Nido · App familiar",
   "short_name": "Nido",
   "description": "Intercambios, cumpleaños, agenda, libro de fotos y más para la familia.",
-  "start_url": "./index.html",
+  "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
@@ -27,7 +27,7 @@
       "purpose": "maskable"
     }
   ],
-  "id": "./",
+  "id": "./?app=nido-familiar",
   "display_override": [
     "standalone",
     "minimal-ui"

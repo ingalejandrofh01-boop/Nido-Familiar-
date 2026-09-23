@@ -51,17 +51,29 @@ service cloud.firestore {
 
       // Colecciones de la familia (eventos, fotos, compras, chat, etc.)
       match /{col}/{docId} {
-        allow read, write: if isMember(fid) && col != 'expenses';
+        allow read, write: if isMember(fid) && col != 'expenses' && col != 'dms';
       }
       // 🔒 Datos privados: sólo su dueño (notas, eventos y finanzas personales)
       match /private/{uid}/{col}/{docId} {
         allow read, write: if isMember(fid) && request.auth.uid == uid;
+      }
+      // 🔒 Mensajes privados: sólo los dos participantes
+      match /dms/{tid} {
+        allow read, update: if isMember(fid) && request.auth.uid in resource.data.uids;
+        allow create: if isMember(fid) && request.auth.uid in request.resource.data.uids;
+      }
+      match /dms/{tid}/msgs/{mid} {
+        allow read, write: if isMember(fid) && request.auth.uid in get(/databases/$(database)/documents/families/$(fid)/dms/$(tid)).data.uids;
       }
       // Dinero: sólo adultos
       match /expenses/{docId} {
         allow read, write: if isAdult(fid);
       }
 
+      // Mensajes anónimos del intercambio
+      match /exchanges/{eid}/anon/{tid} {
+        allow read, write: if isMember(fid);
+      }
       // Intercambios: listas de deseos visibles para todos
       match /exchanges/{eid}/wishes/{wid} {
         allow read, write: if isMember(fid);

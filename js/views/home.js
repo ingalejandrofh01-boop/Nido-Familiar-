@@ -4,6 +4,24 @@ import { esc, avatar, fmtDate, fmtTime, relDay, today0, isoDate, nextBirthday, m
 import { THEMES, nextHoliday, seasonFor } from '../themes.js';
 import { occurrences, EVENT_TYPES } from '../events.js';
 import { openEventForm } from './agenda.js';
+import { pollCard, pollActions } from './polls.js';
+
+function juntos() {
+  const t = isoDate(today0());
+  const poll = S.data.polls.find(p => !p.closed && (!p.closesAt || p.closesAt >= t) && !(p.votes || {})[S.me.id]) || S.data.polls.find(p => !p.closed && (!p.closesAt || p.closesAt >= t));
+  const trip = [...S.data.trips].filter(x => x.end >= t).sort((a, b) => a.start.localeCompare(b.start))[0];
+  const caps = S.data.capsules.filter(c => c.openAt <= t && !(c.opened || {})[S.me.id] && (c.to === 'all' || (c.to || []).includes(S.me.id)));
+  const ch = S.data.challenges.filter(c => c.start <= t && c.end >= t && (c.participants || []).includes(S.me.id) && c.kind === 'check' && !((c.progress || {})[S.me.id] || {})[t]);
+  if (!poll && !trip && !caps.length && !ch.length) return '';
+  const tripDays = trip ? Math.round((parseDate(trip.start) - today0()) / 864e5) : 0;
+  return `<div class="grid g2 mt">
+    ${poll ? pollCard(poll, true) : ''}
+    <div class="col" style="gap:16px">
+      ${caps.length ? `<a class="card deco cap-card ready" href="#/capsula" style="text-decoration:none"><div class="cap-icon">✨⏳✨</div><div class="bold">¡Tienes ${caps.length} cápsula${caps.length > 1 ? 's' : ''} del tiempo por abrir!</div><div class="tiny muted">${esc(caps[0].title)}</div></a>` : ''}
+      ${trip ? `<a class="card deco trip-card" href="#/viaje/${trip.id}" style="text-decoration:none"><div class="trip-emoji">${esc(trip.emoji || '✈️')}</div><div class="small bold muted">✈️ Próximo viaje</div><div class="bold" style="font-size:18px">${esc(trip.title)}</div><div class="small muted">${tripDays > 0 ? `Faltan ${tripDays} días` : '🌴 ¡Estamos de viaje!'} · 🧳 ${(trip.packing || []).filter(p => p.done).length}/${(trip.packing || []).length}</div></a>` : ''}
+      ${ch.length ? `<a class="card deco" href="#/retos" style="text-decoration:none"><div class="small bold muted">🏅 Retos de hoy</div>${ch.slice(0, 3).map(c => `<div class="row mt-s"><span style="font-size:22px">${esc(c.emoji)}</span><span class="grow bold small">${esc(c.title)}</span><span class="chip">Pendiente</span></div>`).join('')}</a>` : ''}
+    </div></div>`;
+}
 import { renderAvatar, randomAvatar } from '../avatar.js';
 const PROMO = { ...randomAvatar(), anim: 'rebote' };
 
@@ -118,6 +136,8 @@ export default {
       </div>
     </div>
 
+    ${juntos()}
+
     <div class="grid g2 mt">
       ${photo ? `<section class="card deco"><div class="card-title"><h3>✨ Recuerdo del día</h3><a href="#/album/${photo.albumId}">Ver álbum</a></div>
         <div class="row" style="align-items:stretch;gap:16px"><div class="polaroid" style="width:48%;flex-shrink:0" onclick="location.hash='#/album/${photo.albumId}'"><img src="${photo.thumb}" alt=""><div class="cap">${esc(photo.caption || '')}</div></div>
@@ -130,6 +150,7 @@ export default {
   },
   after(root) { startCountdowns(root); },
   actions: {
+    ...pollActions,
     newEvent(el, e) { openEventForm(); },
     editEvent(el) { openEventForm(findEvent(el.dataset.id)); },
     party() { for (let i = 0; i < 5; i++) setTimeout(() => hooks.celebrate(innerWidth * (0.2 + Math.random() * 0.6), innerHeight * (0.2 + Math.random() * 0.3), 'confetti'), i * 250); }

@@ -1,8 +1,9 @@
 // 💬 Chat familiar con avisos fijados y "¡Ya llegué!"
 import { S, hooks, member, isAdmin, notify } from '../store.js';
 import { esc, avatar, timeAgo, toast } from '../ui.js';
+import { dmList, unreadDMs } from './dm.js';
 
-let pinMode = false;
+let pinMode = false, ctab = 'familia';
 const linkify = (t) => esc(t).replace(/(https?:\/\/[^\s]+)/g, '<a href="$1" target="_blank" rel="noopener" style="text-decoration:underline">$1</a>');
 
 export function getLocation() {
@@ -17,8 +18,11 @@ export default {
   render() {
     const msgs = S.data.messages;
     const pinned = msgs.filter(m => m.pinned);
-    return `
-      <div class="page-head"><div><h1>Chat familiar</h1><p>Platicar, avisar y saber que todos llegaron bien</p></div></div>
+    const u = unreadDMs();
+    const tabs = `<div class="page-head"><div><h1>Chat</h1><p>${ctab === 'familia' ? 'Platicar, avisar y saber que todos llegaron bien' : 'Conversaciones uno a uno, sólo las ven ustedes dos'}</p></div></div>
+      <div class="seg mb"><button class="${ctab === 'familia' ? 'on' : ''}" data-act="ctab" data-t="familia">👨‍👩‍👧‍👦 Familia</button><button class="${ctab === 'privados' ? 'on' : ''}" data-act="ctab" data-t="privados">🔒 Privados${u ? ` <span class="dm-count">${u}</span>` : ''}</button></div>`;
+    if (ctab === 'privados') return tabs + `<section class="card deco">${dmList()}</section>`;
+    return tabs + `
       <section class="card deco chat">
         ${pinned.map(p => `<div class="pinned">📌 <span class="grow">${linkify(p.text)}</span><span class="tiny muted">${esc(member(p.author)?.name || '')}</span>${p.author === S.me.id || isAdmin() ? `<button class="link tiny" data-act="pin" data-id="${p.id}">Quitar</button>` : ''}</div>`).join('')}
         <div class="chat-msgs" id="msgs">${msgs.map(m => {
@@ -51,6 +55,7 @@ export default {
       document.getElementById('chat-input')?.focus();
     },
     pinMode() { pinMode = !pinMode; hooks.rerender(); },
+    ctab(el) { ctab = el.dataset.t; hooks.rerender(); },
     async pin(el) { const m = S.data.messages.find(x => x.id === el.dataset.id); await S.db.update('messages', m.id, { pinned: !m.pinned }); },
     async del(el) { await S.db.remove('messages', el.dataset.id); },
     async checkin(el) {

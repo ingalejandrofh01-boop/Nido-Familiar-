@@ -44,7 +44,7 @@ export function occurrences(from, to) {
     } else add(start, base);
   }
   for (const m of S.data.members) {
-    if (!m.birthday) continue; const b = parseDate(m.birthday);
+    if (!m.birthday || m.treeOnly) continue; const b = parseDate(m.birthday);
     for (let y = from.getFullYear(); y <= to.getFullYear(); y++)
       add(new Date(y, b.getMonth(), b.getDate()), { title: `Cumpleaños de ${m.name}`, type: 'cumple', member: m, virtual: true, years: y - b.getFullYear() });
   }

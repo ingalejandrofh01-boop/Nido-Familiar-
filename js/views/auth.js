@@ -58,7 +58,7 @@ export function renderFamilySetup() {
 }
 
 export function claimProfile() {
-  const unclaimed = S.data.members.filter(m => !m.uid);
+  const unclaimed = S.data.members.filter(m => !m.uid && !m.treeOnly);
   $app().innerHTML = `<div class="auth"><div class="card auth-card deco view-enter" style="width:min(560px,100%)">
     <div class="auth-logo">👋</div>
     <h2 style="font-size:26px;font-weight:900">¿Quién eres en ${esc(S.family?.name || 'la familia')}?</h2>

@@ -57,6 +57,15 @@ Para no requerir el plan de pago de Firebase Storage, las fotos se **comprimen e
 | 💬 Chat | Mensajes, **avisos fijados**, "llegué a casa", compartir ubicación |
 | 📝 Notas / 🔎 ¿Dónde está? | Wi-Fi, contactos, seguros (con notas ocultas), e inventario de dónde se guardan las cosas |
 | 🐾 Avatares | Creador de avatar animado con volumen y sombreado 3D: 29 animalitos (gato, perro, zorro, conejo, oso, panda, koala, león, tigre, pingüino, búho, rana, cerdito, ratón, unicornio, lobo, mapache, ardilla, elefante, jirafa, chango, vaca, borrego, pollito, dragón, ajolote, jaguar, perezoso, llama), pestañas, colores de pelaje/detalles/marcas (o cualquier color), patrones, 8 tipos de ojos y su color, cejas, 7 expresiones, chapitas, 14 sombreros, 7 lentes/maquillajes, 7 accesorios de cuello, fondos y 7 animaciones. En cada temporada se ponen solos su accesorio (gorro navideño, sombrero de bruja, flores de Muertos…) y el día de su cumpleaños ¡llevan corona! |
+| 💌 Amigo secreto | Mensajes anónimos: el que regala pregunta pistas sin revelar quién es |
+| 🍲 Recetario | Recetas con foto y autor, modo cocina paso a paso (pantalla encendida), favoritas, ingredientes directo a la lista de compras |
+| ⏳ Cápsula del tiempo | Cartas y fotos que sólo se abren en su fecha, con animación y aviso ese día |
+| 🌳 Árbol genealógico | Papás y parejas, abuelos y bisabuelos (también en memoria 🕊️), dibujado por generaciones |
+| 🗳️ Encuestas | Votación en tiempo real, varias respuestas o anónimas, fecha de cierre |
+| ✈️ Viajes | Itinerario por día, maleta compartida, gastos divididos, notas; se agrega a la agenda |
+| 🏅 Retos | Hábitos diarios o metas acumuladas, ranking y puntos al cumplir |
+| 📍 Ubicación | Opcional: cada quien comparte 1 h, 8 h o siempre; mapa con avatares |
+| 🔒 Mensajes privados | Chats uno a uno que sólo ven los dos participantes |
 | 👨‍👩‍👧‍👦 Familia | Perfiles con foto, cumpleaños, contacto de emergencia, info médica, **roles** (Administrador, Adulto, Adolescente, Niño) |
 | 🚨 SOS | Llamar al 911, alerta a la familia con ubicación, mandar por WhatsApp, llamar directo |
 | ⚙️ Ajustes | Tema automático o fijo (para todos o sólo tu teléfono), intensidad de efectos, fondo con foto propia |

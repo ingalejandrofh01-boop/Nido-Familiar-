@@ -23,25 +23,42 @@ import { familia, perfil } from './views/family.js';
 import ajustes from './views/settings.js';
 import mas from './views/more.js';
 import avatarEditor, { resetAvatarDraft } from './views/avatar-editor.js';
+import { recipesView, recipeDetail } from './views/recipes.js';
+import capsula from './views/capsule.js';
+import arbol from './views/tree.js';
+import encuestas from './views/polls.js';
+import { tripsList, tripDetail } from './views/trips.js';
+import retos from './views/challenges.js';
+import ubicacion, { syncLocationSharing } from './views/location.js';
+import dmView from './views/dm.js';
 
 const ROUTES = {
   inicio: home, agenda, intercambios: exchangesList, intercambio: exchangeDetail,
   fotos: photosHome, album: albumView, libro: bookView, listas: shopping, tareas: chores,
-  dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor
+  dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor,
+  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView
 };
 export const NAV = [
   { r: 'inicio', ico: '🏠', t: 'Inicio' },
   { r: 'agenda', ico: '📅', t: 'Agenda' },
   { r: 'intercambios', ico: '🎁', t: 'Intercambios' },
   { r: 'fotos', ico: '📖', t: 'Libro familiar' },
-  { r: 'chat', ico: '💬', t: 'Chat y avisos' },
-  { sep: true },
+  { r: 'chat', ico: '💬', t: 'Chat' },
+  { sep: 'Juntos' },
+  { r: 'encuestas', ico: '🗳️', t: 'Encuestas' },
+  { r: 'retos', ico: '🏅', t: 'Retos' },
+  { r: 'viajes', ico: '✈️', t: 'Viajes' },
+  { r: 'recetas', ico: '🍲', t: 'Recetario' },
+  { r: 'capsula', ico: '⏳', t: 'Cápsula del tiempo' },
+  { r: 'arbol', ico: '🌳', t: 'Árbol genealógico' },
+  { r: 'ubicacion', ico: '📍', t: '¿Dónde andamos?' },
+  { sep: 'Casa' },
   { r: 'listas', ico: '🛒', t: 'Compras' },
   { r: 'tareas', ico: '🧹', t: 'Tareas y puntos' },
   { r: 'dinero', ico: '💰', t: 'Dinero' },
   { r: 'notas', ico: '📝', t: 'Notas' },
   { r: 'donde', ico: '🔎', t: '¿Dónde está?' },
-  { sep: true },
+  { sep: 'Nido' },
   { r: 'familia', ico: '👨‍👩‍👧‍👦', t: 'Familia' },
   { r: 'ajustes', ico: '⚙️', t: 'Ajustes' }
 ];
@@ -54,7 +71,7 @@ let currentTheme = null, pageTheme = null;
 // ---------------- TEMAS ----------------
 function birthdayToday() {
   const t = today0();
-  return S.data.members.find(m => { if (!m.birthday) return false; const b = parseDate(m.birthday); return b.getMonth() === t.getMonth() && b.getDate() === t.getDate(); });
+  return S.data.members.find(m => { if (!m.birthday || m.treeOnly) return false; const b = parseDate(m.birthday); return b.getMonth() === t.getMonth() && b.getDate() === t.getDate(); });
 }
 export function baseTheme() {
   const pref = localStorage_get('nido-theme-local') || S.family?.theme || 'auto';
@@ -118,7 +135,7 @@ function shell() {
     <div class="shell">
       <aside class="sidebar">
         <div class="brand"><span class="brand-logo">🪺</span><div class="grow"><div class="brand-name">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div><button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></div>
-        ${nav.map(n => n.sep ? '<div class="nav-sep"></div>' : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${n.ico}</span>${n.t}</a>`).join('')}
+        ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${n.ico}</span>${n.t}</a>`).join('')}
       </aside>
       <main class="main" id="view"></main>
     </div>
@@ -127,7 +144,7 @@ function shell() {
 }
 
 function markNav(name) {
-  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia' };
+  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat' };
   const active = groups[name] || name;
   const inMore = !TABS.some(t => t[0] === active);
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.r === active));
@@ -197,7 +214,8 @@ document.addEventListener('submit', e => {
 const COLS = {
   members: {}, events: {}, exchanges: {}, albums: {}, photos: { orderBy: ['createdAt', 'asc'] },
   shopping: {}, chores: {}, expenses: {}, messages: { orderBy: ['createdAt', 'desc'], limit: 150 },
-  notes: {}, inventory: {}, backgrounds: {}, rewards: {}, notifications: { orderBy: ['createdAt', 'desc'], limit: 80 }
+  notes: {}, inventory: {}, backgrounds: {}, rewards: {}, notifications: { orderBy: ['createdAt', 'desc'], limit: 80 },
+  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}
 };
 // Colecciones privadas: families/{fid}/private/{uid}/...
 const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', txns: 'txns', myCats: 'categories', budgets: 'budgets', goals: 'goals' };
@@ -210,7 +228,7 @@ async function startFamily() {
     if (!membersLoaded || !famLoaded) return;
     S.me = S.data.members.find(m => m.uid === S.user.uid) || null;
     if (!S.me) { auth.claimProfile(); started = false; return; }
-    if (!started) { started = true; shell(); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); }
+    if (!started) { started = true; shell(); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); syncLocationSharing(); }
     else hooks.rerender();
   };
   familyUnsub = S.db.watchFamily(f => {
@@ -228,9 +246,11 @@ async function startFamily() {
       if (name === 'members') { membersLoaded = true; const had = !!S.me; maybeStart(); if (had) return; return; }
       if (name === 'backgrounds') refreshTheme();
       if (name === 'notifications') notifCenter.onData(rows);
+      if (name === 'locations' && S.me) syncLocationSharing();
       if (started) hooks.rerender();
     }));
   }
+  colUnsubs.push(S.db.watch('dms', { where: ['uids', 'array-contains', S.user.uid] }, rows => { S.data.dms = rows; notifCenter.updateBadges(); if (started) hooks.rerender(); }));
   for (const [key, col] of Object.entries(PRIVATE)) {
     colUnsubs.push(S.db.watch(`private/${S.user.uid}/${col}`, {}, rows => { S.data[key] = rows; if (started) hooks.rerender(); }));
   }

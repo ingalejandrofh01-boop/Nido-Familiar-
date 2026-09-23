@@ -2,13 +2,14 @@
 export const S = {
   db: null, user: null, family: null, me: null, isDemo: false,
   data: { members: [], events: [], exchanges: [], albums: [], photos: [], shopping: [], chores: [], expenses: [], messages: [], notes: [], inventory: [], backgrounds: [], rewards: [], notifications: [],
+    recipes: [], capsules: [], polls: [], trips: [], challenges: [], locations: [], dms: [],
     myEvents: [], myNotes: [], accounts: [], txns: [], myCats: [], budgets: [], goals: [] },
   subs: {},          // suscripciones de la vista actual
   route: { name: 'inicio', params: [] }
 };
 export const hooks = { rerender() { }, go() { }, setPageTheme() { }, celebrate() { } };
 
-export const members = () => [...S.data.members].sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || (a.createdAt || 0) - (b.createdAt || 0));
+export const members = () => S.data.members.filter(m => !m.treeOnly).sort((a, b) => (a.order ?? 99) - (b.order ?? 99) || (a.createdAt || 0) - (b.createdAt || 0));
 export const member = (id) => S.data.members.find(m => m.id === id);
 export const isAdmin = () => S.me?.role === 'admin';
 export const isAdult = () => ['admin', 'adulto'].includes(S.me?.role);

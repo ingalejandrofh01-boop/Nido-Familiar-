@@ -201,6 +201,24 @@ export const exchangeDetail = {
     }
 
     const others = ps.filter(p => p.id !== recv?.id);
+    // 💌 Mensajes anónimos: cada "Santa" tiene un hilo con su amigo secreto
+    let anonBox = '';
+    if (x.status === 'drawn' && (x.participants || []).includes(S.me.id)) {
+      const threads = useSub('anon-' + id, `exchanges/${id}/anon`, {}) || [];
+      const mineT = threads.find(t => t.id === S.me.id);
+      const toMe = threads.filter(t => t.toId === S.me.id && (t.msgs || []).length);
+      const bubble = (m, meSide) => `<div class="msg ${meSide ? 'me' : ''}"><div class="bubble"><div>${esc(m.text)}</div><div class="when">${new Date(m.at).toLocaleString('es-MX', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div></div></div>`;
+      anonBox = `<section class="card deco mt"><div class="card-title"><h3>💌 Mensajes secretos</h3><span class="chip">🤫 Anónimos</span></div>
+        <div class="grid g2">
+          <div class="anon-box">${recv && revealed[id] ? `<div class="row mb" style="margin-bottom:10px">${avatar(recv, 'sm')}<div class="grow"><div class="bold small">Con ${esc(recv.name)}</div><div class="tiny muted">No sabrá que eres tú. Pregúntale pistas: talla, colores, gustos…</div></div></div>
+            <div class="chat-msgs anon-msgs">${(mineT?.msgs || []).map(m => bubble(m, m.by === 'giver')).join('') || '<div class="empty small">Escríbele algo, por ejemplo: “¿Qué talla de playera usas?” 👕</div>'}</div>
+            <form class="chat-input" data-submit="anonSend" data-to="${recv.id}"><input class="input grow" id="anon-in-giver" placeholder="Pregunta en secreto…" autocomplete="off"><button class="btn primary">Enviar</button></form>`
+            : `<div class="empty small">🎁 Abre tu regalo para poder escribirle en secreto a tu amigo secreto.</div>`}</div>
+          <div class="anon-box"><div class="row mb" style="margin-bottom:10px"><span style="font-size:28px">🎅</span><div class="grow"><div class="bold small">Tu amigo secreto te escribe</div><div class="tiny muted">Contesta sin saber quién es 😉</div></div></div>
+            ${toMe.length ? toMe.map((t, i) => `<div class="chat-msgs anon-msgs">${t.msgs.map(m => bubble(m, m.by === 'receiver')).join('')}</div>
+              <form class="chat-input" data-submit="anonReply" data-t="${t.id}"><input class="input grow" id="anon-in-r${i}" placeholder="Responder…" autocomplete="off"><button class="btn primary">Responder</button></form>`).join('<div class="divider"></div>') : '<div class="empty small">Aún no te han escrito. ¡Paciencia! 👀</div>'}</div>
+        </div></section>`;
+    }
     return `
       <a class="link" href="#/intercambios">‹ Intercambios</a>
       <section class="card xhero deco mt">
@@ -215,7 +233,7 @@ export const exchangeDetail = {
           <div class="avatars mt">${ps.map(p => avatar(p)).join('')}</div>
         </div>
       </section>
-      <div class="mt">${center}</div>
+      <div class="mt">${center}</div>${anonBox}
       <div class="page-head mt" style="margin-bottom:12px"><div><h1 style="font-size:30px">Listas de deseos</h1><p>Pistas para acertar con el regalo</p></div></div>
       <div class="grid auto">${recv && revealed[id] ? wishList(recv, true) : ''}${(recv && revealed[id] ? others : ps).map(m => wishList(m, false)).join('')}</div>`;
   },
@@ -241,6 +259,21 @@ export const exchangeDetail = {
       for (const [g, r] of Object.entries(res)) await S.db.set(path, g, { giverId: g, giverUid: member(g)?.uid || '', receiverId: r });
       await S.db.update('exchanges', x.id, { status: 'drawn', drawnAt: Date.now(), liveAt: Date.now() + 5500 });
       notify({ to: x.participants, icon: '🎲', title: `¡Ya se hizo el sorteo! ${x.title}`, body: 'Entra y abre tu regalo para ver a quién le toca 🎁', link: 'intercambio/' + x.id });
+    },
+    async anonSend(f) {
+      const i = f.querySelector('input'); const text = i.value.trim(); if (!text) return; i.value = '';
+      const id = S.route.params[0], path = `exchanges/${id}/anon`;
+      const t = (S.subs['anon-' + id]?.data || []).find(x => x.id === S.me.id);
+      const msgs = [...(t?.msgs || []), { by: 'giver', text, at: Date.now() }];
+      await S.db.set(path, S.me.id, { toId: f.dataset.to, msgs });
+      notify({ to: [f.dataset.to], icon: '💌', title: 'Tu amigo secreto te escribió', body: 'Entra al intercambio para contestarle (no sabrás quién es 😉)', link: 'intercambio/' + id });
+    },
+    async anonReply(f) {
+      const i = f.querySelector('input'); const text = i.value.trim(); if (!text) return; i.value = '';
+      const id = S.route.params[0], path = `exchanges/${id}/anon`;
+      const t = (S.subs['anon-' + id]?.data || []).find(x => x.id === f.dataset.t); if (!t) return;
+      await S.db.update(path, t.id, { msgs: [...(t.msgs || []), { by: 'receiver', text, at: Date.now() }] });
+      notify({ to: [t.id], icon: '💌', title: 'Tu amigo secreto te contestó', body: 'Entra a ver su respuesta', link: 'intercambio/' + id });
     },
     async joinLobby(el) { await S.db.update('exchanges', el.dataset.id, { ['lobby.' + S.me.id]: Date.now() }); try { navigator.vibrate && navigator.vibrate(40); } catch { } toast('🙋 ¡Entraste a la sala!'); },
     async nudge(el) {
