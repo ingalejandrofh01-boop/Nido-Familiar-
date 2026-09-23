@@ -1,0 +1,73 @@
+rules_version = '2';
+// ============================================================
+//  Reglas de seguridad de Firestore para NIDO
+//  Pégalas en: Firebase Console → Firestore Database → Reglas → Publicar
+// ============================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function fam(fid) { return get(/databases/$(database)/documents/families/$(fid)).data; }
+    function isMember(fid) { return signedIn() && request.auth.uid in fam(fid).memberUids; }
+    function role(fid) { return fam(fid).roles[request.auth.uid]; }
+    function isAdmin(fid) { return isMember(fid) && role(fid) == 'admin'; }
+    function isAdult(fid) { return isMember(fid) && role(fid) in ['admin', 'adulto']; }
+
+    // Cada usuario guarda a qué familia pertenece
+    match /users/{uid} {
+      allow read, write: if signedIn() && request.auth.uid == uid;
+    }
+
+    // Códigos de invitación (sólo contienen el id y nombre de la familia)
+    match /invites/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create, update, delete: if signedIn() && isAdmin(request.resource.data.familyId);
+    }
+
+    match /families/{fid} {
+      allow read: if signedIn() && request.auth.uid in resource.data.memberUids;
+
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.memberUids == [request.auth.uid]
+        && request.resource.data.roles[request.auth.uid] == 'admin';
+
+      // Admin edita todo; un adulto puede cambiar tema/presupuesto;
+      // alguien con el código puede UNIRSE (sólo agregarse a sí mismo, sin ser admin)
+      allow update: if isAdmin(fid)
+        || (isAdult(fid) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['theme', 'effects', 'budget']))
+        || (signedIn()
+            && !(request.auth.uid in resource.data.memberUids)
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['memberUids', 'roles'])
+            && request.resource.data.memberUids.toSet().difference(resource.data.memberUids.toSet()) == [request.auth.uid].toSet()
+            && resource.data.memberUids.toSet().difference(request.resource.data.memberUids.toSet()).size() == 0
+            && request.resource.data.roles.diff(resource.data.roles).affectedKeys().hasOnly([request.auth.uid])
+            && request.resource.data.roles[request.auth.uid] in ['adulto', 'adolescente', 'nino']);
+
+      allow delete: if isAdmin(fid);
+
+      // Colecciones de la familia (eventos, fotos, compras, chat, etc.)
+      match /{col}/{docId} {
+        allow read, write: if isMember(fid) && col != 'expenses';
+      }
+      // Dinero: sólo adultos
+      match /expenses/{docId} {
+        allow read, write: if isAdult(fid);
+      }
+
+      // Intercambios: listas de deseos visibles para todos
+      match /exchanges/{eid}/wishes/{wid} {
+        allow read, write: if isMember(fid);
+      }
+      // Sorteo secreto: cada quien sólo puede leer SU resultado.
+      // El organizador (o admin) lo crea; tras "Revelar a todos", todos lo ven.
+      match /exchanges/{eid}/assignments/{aid} {
+        function ex() { return get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)).data; }
+        function organizer() { return ex().createdBy == request.auth.uid || isAdmin(fid); }
+        allow read: if isMember(fid) && (resource.data.giverUid == request.auth.uid || organizer() || ex().status == 'revealed');
+        allow write: if isMember(fid) && organizer();
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+# 🪺 Nido · App familiar
+
+App web para la familia: **intercambios con sorteo secreto**, cumpleaños, agenda, **libro de fotos**, compras, tareas con puntos, dinero, chat con avisos, notas, "¿dónde está todo?" y botón SOS.
+El diseño **cambia solo con la temporada** (Navidad con nieve y luces, Halloween con murciélagos y niebla, Día de Muertos con papel picado y cempasúchil, Fiestas Patrias con fuegos artificiales, etc.) y el día del cumpleaños de alguien se pone en modo fiesta 🎂.
+
+Es HTML + CSS + JavaScript puro, sin compilación. Se sube tal cual a GitHub Pages y usa Firebase como base de datos.
+
+---
+
+## 1. Pruébala ya (modo demo)
+
+Sin configurar nada, la app arranca en **modo demo** con datos de ejemplo guardados sólo en tu navegador.
+
+> ⚠️ Usa módulos de JavaScript, así que **no funciona abriendo el archivo con doble clic** (`file://`). Ábrela con un servidor:
+> - VS Code → extensión **Live Server** → clic derecho en `index.html` → *Open with Live Server*, o
+> - en la carpeta: `npx serve` o `python -m http.server 8000` y entra a `http://localhost:8000`
+
+## 2. Súbela a GitHub Pages
+
+1. Crea un repositorio en GitHub (por ejemplo `nido-familia`).
+2. Sube **todo el contenido de esta carpeta** (que `index.html` quede en la raíz).
+3. En el repo: **Settings → Pages → Build and deployment → Source: Deploy from a branch → `main` / `(root)` → Save**.
+4. En 1–2 minutos estará en `https://TU-USUARIO.github.io/nido-familia/`.
+
+## 3. Conecta Firebase (para usarla con toda la familia)
+
+1. Entra a <https://console.firebase.google.com> → **Agregar proyecto** (el plan gratuito *Spark* alcanza).
+2. **Compilación → Authentication → Comenzar** y activa:
+   - **Google**
+   - **Correo electrónico/contraseña**
+3. En Authentication → **Configuración → Dominios autorizados** agrega `TU-USUARIO.github.io`.
+4. **Compilación → Firestore Database → Crear base de datos** → modo producción → región `nam5` (o la más cercana).
+5. En Firestore → pestaña **Reglas**, borra lo que hay, pega el contenido de **`firestore.rules`** y **Publicar**.
+6. **Configuración del proyecto (⚙️) → Tus apps → Web `</>`** → registra la app y copia el objeto `firebaseConfig`.
+7. Pégalo en **`js/config.js`**, haz commit y listo. La app sale del modo demo automáticamente.
+
+**Primer uso:** tú entras, creas la familia y te conviertes en administrador. En *Familia* verás un **código de invitación** para mandarlo por WhatsApp; cada quien entra con su cuenta, pone el código y elige su perfil. A los peques sin celular los agregas tú como integrantes.
+
+### ¿Y las fotos?
+Para no requerir el plan de pago de Firebase Storage, las fotos se **comprimen en el teléfono** y se guardan en Firestore (miniatura + versión grande de ~1600 px). El plan gratuito da 1 GB, que alcanza para varios miles de fotos. Si algún día quieren fotos en resolución original, se puede migrar a Firebase Storage.
+
+---
+
+## Qué incluye
+
+| Módulo | Qué hace |
+|---|---|
+| 🏠 Inicio | Saludo, cuenta regresiva a la próxima fiesta, eventos de hoy, avisos fijados, próximo intercambio, cumpleaños, recuerdo del día, ranking |
+| 🎁 Intercambios | Estilo por temporada (cambia todo el diseño de la página), presupuesto, reglas, parejas que no pueden tocarse, **sorteo secreto**, regalo animado que se abre para revelar, listas de deseos, revelación para quien no tiene cuenta, "revelar a todos" el día del evento |
+| 📅 Agenda | Calendario mensual, citas, escuela, viajes de varios días, repeticiones (diario, semanal, mensual, anual), cumpleaños y aniversarios automáticos |
+| 📖 Libro familiar | Capítulos con portada, fotos tipo polaroid, visor, **libro con páginas que se voltean en 3D**, usar una foto como fondo del tema |
+| 🛒 Compras | Listas compartidas en tiempo real (Súper, Farmacia, Casa, personalizadas) |
+| 🧹 Tareas | Responsable, puntos, tareas que se repiten, ranking y **premios canjeables** |
+| 💰 Dinero | Gastos por mes, presupuesto, categorías, quién pagó y **cuentas entre familiares** (sólo adultos) |
+| 💬 Chat | Mensajes, **avisos fijados**, "llegué a casa", compartir ubicación |
+| 📝 Notas / 🔎 ¿Dónde está? | Wi-Fi, contactos, seguros (con notas ocultas), e inventario de dónde se guardan las cosas |
+| 🐾 Avatares | Creador de avatar animado: 15 animalitos (gato, perro, zorro, conejo, oso, panda, koala, león, tigre, pingüino, búho, rana, cerdito, ratón, unicornio), colores de pelaje/detalles/marcas (o cualquier color), patrones, 8 tipos de ojos y su color, cejas, 7 expresiones, chapitas, 14 sombreros, 7 lentes/maquillajes, 7 accesorios de cuello, fondos y 7 animaciones. En cada temporada se ponen solos su accesorio (gorro navideño, sombrero de bruja, flores de Muertos…) y el día de su cumpleaños ¡llevan corona! |
+| 👨‍👩‍👧‍👦 Familia | Perfiles con foto, cumpleaños, contacto de emergencia, info médica, **roles** (Administrador, Adulto, Adolescente, Niño) |
+| 🚨 SOS | Llamar al 911, alerta a la familia con ubicación, mandar por WhatsApp, llamar directo |
+| ⚙️ Ajustes | Tema automático o fijo (para todos o sólo tu teléfono), intensidad de efectos, fondo con foto propia |
+
+**Temporadas automáticas (México):** Año Nuevo (31 dic–6 ene), Invierno, Amor y Amistad (1–16 feb), Primavera, Día de las Madres (1–12 may), Verano, Fiestas Patrias (1–16 sep), Otoño, Halloween (15–30 oct), Día de Muertos (31 oct–3 nov), Navidad (1–30 dic) y Cumpleaños (el día de cada quien). Las fechas están en `js/themes.js` (`SEASONS`).
+
+**Se instala como app:** en el celular, abre la página en Chrome/Safari → *Agregar a pantalla de inicio*.
+
+## Estructura
+
+```
+index.html          → página principal
+css/styles.css      → todo el diseño
+js/config.js        → ⚙️ TU configuración de Firebase
+js/app.js           → arranque, sesión, rutas y temas
+js/db.js            → Firebase / modo demo
+js/themes.js        → temporadas, escenas y adornos
+js/fx.js            → partículas (nieve, hojas, murciélagos, fuegos artificiales…)
+js/avatar.js        → dibujo de los avatares de animalitos (SVG)
+js/views/*.js       → cada sección de la app
+firestore.rules     → reglas de seguridad
+manifest.json, sw.js, icons/ → para instalarla como app
+```
