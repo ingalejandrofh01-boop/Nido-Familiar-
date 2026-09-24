@@ -6,7 +6,7 @@ import { APP_NAME } from './config.js';
 import { THEMES, seasonFor, renderScene, renderDeco } from './themes.js';
 import { initFx, setFx, setIntensity, celebrate } from './fx.js';
 import { S, hooks, clearSubs, runCleanups, members } from './store.js';
-import { esc, toast, today0, parseDate, avatar } from './ui.js';
+import { esc, toast, today0, parseDate, avatar, isoDate } from './ui.js';
 import { openSOS } from './views/sos.js';
 import * as notifCenter from './notifications.js';
 import * as auth from './views/auth.js';
@@ -44,7 +44,8 @@ import { openSearch } from './search.js';
 import { initGestures } from './gestures.js';
 import { animateView, playFor } from './motion.js';
 import { maybeOnboard } from './onboarding.js';
-import { ensureRecurring } from './debts.js';
+import { ensureRecurring, agendaRows, quincena } from './debts.js';
+import { unreadDMs } from './views/dm.js';
 import { initSync, syncPill, syncInfo, paint as paintSync } from './sync.js';
 
 const ROUTES = {
@@ -55,10 +56,11 @@ const ROUTES = {
 };
 export const NAV = [
   { r: 'inicio', ico: '🏠', t: 'Inicio' },
+  { r: 'cuentas', ico: '🤝', t: 'Cuentas claras' },
+  { r: 'chat', ico: '💬', t: 'Chat' },
   { r: 'agenda', ico: '📅', t: 'Agenda' },
   { r: 'intercambios', ico: '🎁', t: 'Intercambios' },
   { r: 'fotos', ico: '📖', t: 'Libro familiar' },
-  { r: 'chat', ico: '💬', t: 'Chat' },
   { sep: 'Juntos' },
   { r: 'fiestas', ico: '🎉', t: 'Fiestas y posadas' },
   { r: 'encuestas', ico: '🗳️', t: 'Encuestas' },
@@ -75,7 +77,6 @@ export const NAV = [
   { r: 'tareas', ico: '🧹', t: 'Tareas y puntos' },
   { r: 'mascotas', ico: '🐾', t: 'Mascotas' },
   { r: 'dinero', ico: '💰', t: 'Dinero' },
-  { r: 'cuentas', ico: '🤝', t: 'Cuentas claras' },
   { r: 'metas', ico: '🎯', t: 'Metas' },
   { r: 'notas', ico: '📝', t: 'Notas' },
   { r: 'donde', ico: '🔎', t: '¿Dónde está?' },
@@ -84,7 +85,7 @@ export const NAV = [
   { r: 'resumen', ico: '🎁', t: 'Resumen del año' },
   { r: 'ajustes', ico: '⚙️', t: 'Ajustes' }
 ];
-const TABS = [['inicio', '🏠', 'Inicio'], ['agenda', '📅', 'Agenda'], ['+', '＋', 'Agregar'], ['fotos', '📖', 'Fotos'], ['mas', '☰', 'Más']];
+const TABS = [['inicio', '🏠', 'Inicio'], ['cuentas', '🤝', 'Cuentas'], ['+', '＋', 'Agregar'], ['chat', '💬', 'Chat'], ['mas', '☰', 'Más']];
 
 const $app = document.getElementById('app');
 let familyUnsub = null, colUnsubs = [], recurT = null;
@@ -165,14 +166,24 @@ function shell() {
         <div class="brand"><span class="brand-logo">🪺</span><div class="grow"><div class="brand-name">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div><button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></div>
         <div class="side-actions"><button class="btn primary side-add" data-act="quickAdd">${icon('mas_add')} Agregar</button><button class="bell" data-act="search" aria-label="Buscar" title="Buscar (Ctrl+K)">${icon('buscar')}</button></div>
         <div class="side-sync">${syncPill()}</div>
-        ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${icon(n.r) || n.ico}</span>${n.t}</a>`).join('')}
+        ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${icon(n.r) || n.ico}</span>${n.t}<b class="tab-badge side" data-tb="${n.r}" hidden></b></a>`).join('')}
       </aside>
       <main class="main" id="view"></main>
     </div>
-    <nav class="tabbar">${TABS.map(([r, i, t]) => r === '+' ? `<button class="tab tab-add" data-act="quickAdd" aria-label="Agregar"><span class="ico">${icon('mas_add')}</span></button>` : `<a class="tab" data-r="${r}" href="#/${r}"><span class="ico">${icon(r) || i}</span>${t}</a>`).join('')}</nav>
+    <nav class="tabbar">${TABS.map(([r, i, t]) => r === '+' ? `<button class="tab tab-add" data-act="quickAdd" aria-label="Agregar"><span class="ico">${icon('mas_add')}</span></button>` : `<a class="tab" data-r="${r}" href="#/${r}"><span class="ico">${icon(r) || i}<b class="tab-badge" data-tb="${r}" hidden></b></span>${t}</a>`).join('')}</nav>
     <button class="sos-fab" data-act="sos" aria-label="Emergencia">SOS</button>`;
 }
 
+function updateTabBadges() {
+  if (!S.me) return;
+  const t = isoDate(today0()), q = quincena();
+  const rows = agendaRows().filter(r => r.from === S.me.id && r.due <= q.end);
+  const late = rows.some(r => r.due < t);
+  let seen = 0; try { seen = +localStorage.getItem('nido-chat-seen') || 0; } catch { }
+  const chat = S.route.name === 'chat' ? 0 : S.data.messages.filter(m => m.author !== S.me.id && (m.createdAt || 0) > seen).length + unreadDMs();
+  const set = (r, n, cls = '') => document.querySelectorAll(`[data-tb="${r}"]`).forEach(b => { b.hidden = !n; b.textContent = n > 9 ? '9+' : n; b.className = 'tab-badge ' + (b.classList.contains('side') ? 'side ' : '') + cls; });
+  set('cuentas', rows.length, late ? 'late' : ''); set('chat', chat);
+}
 function markNav(name) {
   const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat', mascota: 'mascotas', fiesta: 'fiestas', cuenta: 'cuentas', meta: 'metas' };
   const active = groups[name] || name;
@@ -196,6 +207,8 @@ function render() {
   if (keep) { const el = document.getElementById(keep.id); if (el) { el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch { } } }
   V.after && V.after(view, params);
   animateView(view, routeChanged); routeChanged = false;
+  if (name === 'chat') { try { localStorage.setItem('nido-chat-seen', String(Date.now())); } catch { } }
+  updateTabBadges();
   notifCenter.updateBadges();
   const me = document.querySelector('.mtop-me'); if (me && S.me) me.innerHTML = avatar(S.me, 'sm');
 }

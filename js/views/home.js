@@ -97,10 +97,11 @@ function dayRecap() {
   const pays = (S.data.bills || []).flatMap(b => b.payments || []).filter(p => p.date === t);
   const contrib = [...(S.data.famgoals || [])].flatMap(g => g.contribs || []).filter(c => c.date === t && c.amount > 0).reduce((a, c) => a + c.amount, 0);
   const tm = new Date(today0()); tm.setDate(tm.getDate() + 1); const tomorrow = occurrences(tm, tm).filter(o => !o.bill).slice(0, 3);
-  const items = [[photos, '📸', 'fotos nuevas'], [chores, '🧹', 'tareas hechas'], [bought, '🛒', 'cosas compradas'], [care, '🐾', 'cuidados a las mascotas'], [msgs, '💬', 'mensajes'], [pays.length, '💸', 'abonos'], [contrib ? cash(contrib) : 0, '🎯', 'para las metas']].filter(([v]) => v);
+  const petLink = (S.data.pets || []).length === 1 ? 'mascota/' + S.data.pets[0].id : 'mascotas';
+  const items = [[photos, '📸', 'fotos nuevas', 'fotos'], [chores, '🧹', 'tareas hechas', 'tareas'], [bought, '🛒', 'cosas compradas', 'listas'], [care, '🐾', 'cuidados a las mascotas', petLink], [msgs, '💬', 'mensajes', 'chat'], [pays.length, '💸', 'abonos', 'cuentas'], [contrib ? cash(contrib) : 0, '🎯', 'para las metas', 'metas']].filter(([v]) => v);
   return `<section class="card deco mt recap"><div class="card-title"><h3>🌙 Así estuvo hoy</h3><span class="tiny muted">${new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
-    ${items.length ? `<div class="recap-grid">${items.map(([v, e, l]) => `<div><span>${e}</span><b>${v}</b><span class="tiny muted">${l}</span></div>`).join('')}</div>` : '<p class="small bold muted">Un día tranquilo en el nido 😌</p>'}
-    ${tomorrow.length ? `<div class="small bold mt">🔜 Mañana: ${tomorrow.map(o => esc(o.title)).join(' · ')}</div>` : ''}</section>`;
+    ${items.length ? `<div class="recap-grid">${items.map(([v, e, l, r]) => `<a href="#/${r}"><span>${e}</span><b>${v}</b><span class="tiny muted">${l}</span></a>`).join('')}</div>` : '<p class="small bold muted">Un día tranquilo en el nido 😌</p>'}
+    ${tomorrow.length ? `<a class="small bold mt recap-tm" href="#/agenda">🔜 Mañana: ${tomorrow.map(o => esc(o.title)).join(' · ')} ›</a>` : ''}</section>`;
 }
 function cdBoxes(target) {
   return `<div class="countdown" data-cd="${target.getTime()}">
@@ -179,7 +180,7 @@ export default {
       <a href="#/intercambios"><span>🎁</span>Regalos</a>
       <a href="#/fotos"><span>📸</span>Fotos</a>
       <a href="#/listas"><span>🛒</span>Compras</a>
-      <a href="#/cuentas"><span>🤝</span>Cuentas</a>
+      <a href="#/agenda"><span>🗓️</span>Agenda</a>
     </div>`,
       stats: `<div class="grid g4 mt">
       <a class="card pad-sm stat" href="#/agenda" style="text-decoration:none"><span class="v">📅 <span data-count="${todays.length}">${todays.length}</span></span><span class="l">Eventos hoy</span></a>

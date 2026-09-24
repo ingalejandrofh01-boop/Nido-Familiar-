@@ -1,8 +1,8 @@
 // Service worker: permite instalar Nido como app y abrirla sin conexión
-const CACHE = 'nido-v17';
+const CACHE = 'nido-v18';
 const SHELL = [
-  './', './index.html', './css/styles.css', './css/styles.css?v=17', './manifest.json',
-  './js/app.js', './js/app.js?v=17', './js/notifications.js', './js/views/myfinance.js', './js/avatar.js', './js/avatar-species.js', './js/avatar-color.js', './js/views/avatar-editor.js', './js/config.js', './js/db.js', './js/demo-data.js', './js/events.js', './js/fx.js', './js/store.js', './js/themes.js', './js/ui.js', './js/reveal.js', './js/wishes.js', './js/sync.js', './js/backup.js', './js/debts.js', './js/icons.js', './js/quickadd.js', './js/search.js', './js/gestures.js', './js/motion.js', './js/onboarding.js',
+  './', './index.html', './css/styles.css', './css/styles.css?v=18', './manifest.json',
+  './js/app.js', './js/app.js?v=18', './js/notifications.js', './js/views/myfinance.js', './js/avatar.js', './js/avatar-species.js', './js/avatar-color.js', './js/views/avatar-editor.js', './js/config.js', './js/db.js', './js/demo-data.js', './js/events.js', './js/fx.js', './js/store.js', './js/themes.js', './js/ui.js', './js/reveal.js', './js/wishes.js', './js/sync.js', './js/backup.js', './js/debts.js', './js/icons.js', './js/quickadd.js', './js/search.js', './js/gestures.js', './js/motion.js', './js/onboarding.js',
   './js/views/agenda.js', './js/views/recipes.js', './js/views/capsule.js', './js/views/tree.js', './js/views/polls.js', './js/views/trips.js', './js/views/challenges.js', './js/views/location.js', './js/views/dm.js', './js/views/pets.js', './js/views/parties.js', './js/views/wheel.js', './js/views/menu.js', './js/views/bills.js', './js/views/goals.js', './js/views/wrapped.js', './js/views/auth.js', './js/views/chat.js', './js/views/exchanges.js', './js/views/family.js', './js/views/home.js',
   './js/views/lists.js', './js/views/money.js', './js/views/more.js', './js/views/notes.js', './js/views/photos.js', './js/views/settings.js', './js/views/sos.js',
   './icons/icon-192.png', './icons/icon-512.png'

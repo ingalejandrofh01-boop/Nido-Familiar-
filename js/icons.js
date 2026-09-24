@@ -19,7 +19,7 @@ const P = {
   tareas: '<path class="f" d="M5 20l3-9h8l3 9z"/><path d="M12 3v8M7 11h10l3 9H4zM9 20l.5-4M15 20l-.5-4M12 20v-4"/>',
   mascotas: '<ellipse class="f" cx="12" cy="16" rx="4.5" ry="3.5"/><ellipse cx="12" cy="16" rx="4.5" ry="3.5"/><circle cx="6" cy="10.5" r="2"/><circle cx="18" cy="10.5" r="2"/><circle cx="9.3" cy="6" r="2"/><circle cx="14.7" cy="6" r="2"/>',
   dinero: '<rect class="f" x="3" y="6" width="18" height="12" rx="2.5"/><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.8"/><path d="M6.5 9.5v.01M17.5 14.5v.01"/>',
-  cuentas: '<path class="f" d="M3 12l4-4 5 3 5-3 4 4-5 6-4-2-4 2z"/><path d="M3 11.5l4-4.5 4 2.5M21 11.5L17 7l-6 3.5 2.5 2 3-1.5M7 7l-4 4.5 5 5.5 2-1.5M12.5 12.5l3 3M11 14l2.5 2.5M9.5 15.5l1.8 1.8"/>',
+  cuentas: '<path class="f" d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5-2 1.5z"/><path d="M6 3h12v18l-2-1.5-2 1.5-2-1.5-2 1.5-2-1.5-2 1.5zM9 12h6"/><circle cx="12" cy="8.5" r="1" class="d"/><circle cx="12" cy="15.5" r="1" class="d"/>',
   metas: '<circle class="f" cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" class="d"/><path d="M12 12l7-7M16.5 3.5L19 5l1.5 2.5"/>',
   notas: '<path class="f" d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3v4h4M8.5 12h7M8.5 16h5"/>',
   donde: '<circle class="f" cx="10.5" cy="10.5" r="6"/><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/>',

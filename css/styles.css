@@ -1149,3 +1149,14 @@ input[type=date]::-webkit-date-and-time-value, input[type=time]::-webkit-date-an
 .search-bar input::-webkit-search-cancel-button { display: none; -webkit-appearance: none; } .mtop .brand-fam { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .mtop .grow { min-width: 0; }
 .hb .quick { grid-template-columns: repeat(5, minmax(0, 1fr)); } @media (max-width: 640px) { .hb .quick { gap: 6px; } .hb .quick a { padding: 12px 2px; font-size: 11.5px; } .hb .quick a span { font-size: 24px; } }
 .goal-card .chip { white-space: normal; max-width: 100%; } .goal-card { min-width: 0; } @media (max-width: 380px) { .goal-card { gap: 12px; } .goal-card .goal-ring { --s: 76px !important; } }
+.tab .ico { position: relative; }
+.tab-badge { position: absolute; top: -6px; right: -10px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--accent); color: #fff; font: 900 10.5px/18px var(--font-body, inherit); text-align: center; box-shadow: 0 0 0 2px var(--card-strong); font-style: normal; }
+.tab-badge.late { background: #e34948; animation: sealPulse 1.6s ease-in-out infinite; }
+.tab-badge.side { position: static; margin-left: auto; box-shadow: none; animation: none; }
+.tab-badge[hidden] { display: none; }
+.recap-grid a { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 12px 8px; border-radius: 16px; background: var(--hover); text-align: center; text-decoration: none; color: inherit; transition: transform .15s, background .2s; }
+.recap-grid a:hover { background: color-mix(in srgb, var(--accent) 18%, var(--hover)); } .recap-grid a:active { transform: scale(.95); }
+.recap-grid a > span:first-child { font-size: 24px; } .recap-grid a b { font-size: 20px; }
+.recap-tm { display: block; text-decoration: none; color: inherit; padding: 10px 12px; border-radius: 14px; background: var(--hover); }
+.tab:not(.tab-add) .ico { width: 28px; height: 28px; } .tab .tab-badge { top: -5px; right: -14px; left: auto; }
+.tab .tab-badge { right: -20px; top: -6px; }
