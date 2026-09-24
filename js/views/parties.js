@@ -1,5 +1,7 @@
 // 🎉 Organizador de fiestas y posadas: ¿quién trae qué?, confirmaciones y ubicación
-import { S, hooks, members, member, notify } from '../store.js';
+import { S, hooks, members, member, notify, peopleOf, isAdult } from '../store.js';
+import { inviteCard, syncPeople, leaveEvent, remindersCard } from '../guest.js';
+import { useSub } from '../store.js';
 import { esc, avatar, modal, toast, fmtDate, fmtTime, isoDate, parseDate, today0, daysBetween, relDay, confirmBox } from '../ui.js';
 import { startCountdowns } from './home.js';
 
@@ -77,21 +79,24 @@ export const partyDetail = {
     const when = partyWhen(p), future = when > Date.now(), c = rsvpCount(p), r = p.rsvp || {}, mine = r[S.me.id] || {};
     const items = p.items || [], cov = items.filter(i => i.by).length;
     const host = member(p.host);
-    const group = (k) => members().filter(m => (r[m.id] || {}).s === k);
+    const group = (k) => peopleOf(p).filter(m => (r[m.id] || {}).s === k);
+    if (!S.guest && p.inviteCode) syncPeople('parties', p);
     const invite = `🎉 ${p.title}\n📅 ${fmtDate(p.date, { weekday: true })}${p.time ? ' · ' + fmtTime(p.time) : ''}${p.place ? `\n📍 ${p.place}` : ''}${p.address ? `\n🗺️ ${mapsUrl(p)}` : ''}${p.notes ? `\n✨ ${p.notes}` : ''}\n\nConfirma y apunta qué llevas en Nido 🪺`;
-    return `<a class="link" href="#/fiestas">‹ Fiestas</a>
+    return `<a class="link" href="#/${S.guest ? 'invitado' : 'fiestas'}">‹ ${S.guest ? 'Mis invitaciones' : 'Fiestas'}</a>
       <section class="card xhero deco mt">
         <div class="xhero-inner">
-          <div class="row between wrap"><span class="chip accent">${esc(p.emoji || '🎉')} ${(PARTY_TYPES[p.type] || PARTY_TYPES.otro)[1]}</span><button class="btn sm" data-act="editParty" data-id="${p.id}">✏️ Editar</button></div>
+          <div class="row between wrap"><span class="chip accent">${esc(p.emoji || '🎉')} ${(PARTY_TYPES[p.type] || PARTY_TYPES.otro)[1]}</span>${S.guest ? '<span class="chip">🎟️ Eres invitado</span>' : `<button class="btn sm" data-act="editParty" data-id="${p.id}">✏️ Editar</button>`}</div>
           <div class="xhero-title mt">${esc(p.title)}</div>
           <div class="row wrap mt small bold" style="gap:14px"><span>📅 ${fmtDate(p.date, { weekday: true })}${p.time ? ' · ' + fmtTime(p.time) : ''}</span>${host ? `<span>🏠 Recibe ${esc(host.name)}</span>` : ''}</div>
           ${p.notes ? `<p class="bold mt">✨ ${esc(p.notes)}</p>` : ''}
           ${future ? `<div class="countdown" data-cd="${when.getTime()}">${['días', 'horas', 'min', 'seg'].map(l => `<div class="cd-box"><b>--</b><span>${l}</span></div>`).join('')}</div>` : daysBetween(today0(), parseDate(p.date)) === 0 ? '<p class="bold mt">🎉 ¡Es hoy!</p>' : ''}
           ${p.place || p.address ? `<div class="place-box mt"><div class="grow" style="min-width:0"><div class="bold">📍 ${esc(p.place || 'Ubicación')}</div>${p.address ? `<div class="small muted">${esc(p.address)}</div>` : ''}</div>
             ${p.address || p.place ? `<div class="row wrap" style="gap:8px"><a class="btn sm primary" href="${mapsUrl(p)}" target="_blank" rel="noopener">🗺️ Maps</a><a class="btn sm" href="${wazeUrl(p)}" target="_blank" rel="noopener">🚗 Waze</a></div>` : ''}</div>` : ''}
-          <div class="row wrap mt" style="gap:8px"><a class="btn sm" href="https://wa.me/?text=${encodeURIComponent(invite)}" target="_blank" rel="noopener">💬 Invitar por WhatsApp</a></div>
+          <div class="row wrap mt" style="gap:8px"><button class="btn sm" data-act="addCal" data-col="parties" data-id="${p.id}">📅 Agregar a mi calendario</button>${S.guest ? '' : `<a class="btn sm" href="https://wa.me/?text=${encodeURIComponent(invite)}" target="_blank" rel="noopener">💬 Avisar por WhatsApp</a>`}</div>
         </div>
       </section>
+      ${S.guest ? '' : inviteCard('parties', p, isAdult() || S.me.id === p.by || S.me.id === p.host)}
+      ${!S.guest && (isAdult() || S.me.id === p.by || S.me.id === p.host) ? remindersCard('parties', p, Object.keys(p.guests || {}).length ? (useSub('contacts-' + p.id, `parties/${p.id}/contacts`, {}) || []) : []) : ''}
 
       <div class="grid g2 mt">
         <section class="card deco"><div class="card-title"><h3>🙋 ¿Vas?</h3><span class="chip accent">👥 ${c.people} persona${c.people === 1 ? '' : 's'}</span></div>
@@ -107,14 +112,16 @@ export const partyDetail = {
             <span class="emoji">${i.by ? (i.done ? '✅' : '🙋') : '⬜'}</span>
             <div class="grow" style="min-width:0"><div class="bold small">${esc(i.name)}${i.qty ? ` <span class="muted">· ${esc(i.qty)}</span>` : ''}</div>${who ? `<div class="tiny muted">${me ? 'Tú lo llevas' : 'Lo lleva ' + esc(who.name)}${i.done ? ' · ya lo tiene 👍' : ''}</div>` : ''}</div>
             ${!i.by ? `<button class="btn sm" data-act="bring" data-id="${p.id}" data-i="${i.id}">🙋 Yo lo llevo</button>` : me ? `<button class="btn sm ${i.done ? 'primary' : 'ghost'}" data-act="bringDone" data-id="${p.id}" data-i="${i.id}" title="Ya lo tengo">${i.done ? '✅' : '🛍️'}</button><button class="link tiny" data-act="unbring" data-id="${p.id}" data-i="${i.id}">Soltar</button>` : avatar(who, 'sm')}
-            <button class="link tiny faint" data-act="delItem" data-id="${p.id}" data-i="${i.id}" aria-label="Quitar">✕</button></div>`; }).join('') || '<div class="empty small">Agrega lo que hace falta y cada quien se apunta</div>'}</div>
+            ${S.guest ? '' : `<button class="link tiny faint" data-act="delItem" data-id="${p.id}" data-i="${i.id}" aria-label="Quitar">✕</button>`}</div>`; }).join('') || '<div class="empty small">Agrega lo que hace falta y cada quien se apunta</div>'}</div>
           <form class="row mt" data-submit="addItem" data-id="${p.id}"><input class="input grow" id="bring-in" placeholder="Agregar: tostadas, hielo…" autocomplete="off"><input class="input" id="bring-qty" placeholder="Cant." style="max-width:80px"><button class="btn primary">＋</button></form>
-          ${items.some(i => i.by === S.me.id && !i.done) ? `<button class="btn sm block mt" data-act="bringShop" data-id="${p.id}">🛒 Pasar lo que llevo a mi lista de compras</button>` : ''}
+          ${!S.guest && items.some(i => i.by === S.me.id && !i.done) ? `<button class="btn sm block mt" data-act="bringShop" data-id="${p.id}">🛒 Pasar lo que llevo a mi lista de compras</button>` : ''}
         </section>
-      </div>`;
+      </div>
+      ${S.guest ? `<div class="center mt"><button class="btn ghost sm" data-act="leave" data-id="${p.id}">👋 Salir de esta fiesta</button></div>` : ''}`;
   },
   after(root) { startCountdowns(root); },
   actions: {
+    leave(el) { leaveEvent('parties', el.dataset.id); },
     editParty(el) { partyForm(party(el.dataset.id)); },
     async rsvp(el) {
       const p = party(el.dataset.id), cur = (p.rsvp || {})[S.me.id] || {};

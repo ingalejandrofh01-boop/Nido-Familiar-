@@ -47,7 +47,9 @@ function demoBackend() {
   const famWatchers = new Set();
   const authCbs = new Set();
   let user = null;
-  try { if (sessionStorage.getItem('nido-demo-auth')) user = load().user; } catch { }
+  const DEMO_GUEST = { uid: 'demo-guest', name: 'Mariana', email: 'mariana@ejemplo.com', photo: '', verified: true };
+  try { const a = sessionStorage.getItem('nido-demo-auth'); if (a) user = a === 'guest' ? DEMO_GUEST : load().user; } catch { }
+  const users = () => { const d = load(); d.users = d.users || {}; return d.users; };
 
   const col = (path) => { const d = load(); d.cols[path] = d.cols[path] || {}; return d.cols[path]; };
   const emit = (path) => {
@@ -63,6 +65,12 @@ function demoBackend() {
       try { sessionStorage.setItem('nido-demo-auth', '1'); } catch { }
       authCbs.forEach(cb => cb(user));
     },
+    // 🎟️ En la demo puedes entrar como una invitada de fuera para probar cómo lo ve ella
+    async signInDemoGuest() {
+      user = DEMO_GUEST;
+      try { sessionStorage.setItem('nido-demo-auth', 'guest'); } catch { }
+      authCbs.forEach(cb => cb(user));
+    },
     async signInGoogle() { return this.signInDemo(); },
     async signInEmail() { return this.signInDemo(); },
     async signUpEmail() { return this.signInDemo(); },
@@ -71,7 +79,26 @@ function demoBackend() {
       try { sessionStorage.removeItem('nido-demo-auth'); } catch { }
       authCbs.forEach(cb => cb(null));
     },
-    async getMyFamilyId() { return 'demo'; },
+    async getMyFamilyId() { return user?.uid === load().user.uid ? 'demo' : null; },
+    async getUserInfo() { const u = users()[user.uid] || {}; return { familyId: user.uid === load().user.uid ? 'demo' : null, guestOf: u.guestOf || [] }; },
+    async setGuestOf(list) { users()[user.uid] = { ...(users()[user.uid] || {}), guestOf: list }; persist(); },
+    async guestJoin(fid, colName, id, code, profile, { participant = false, rsvp = false } = {}) {
+      const d = col(colName)[id];
+      if (!d || !d.inviteOpen || d.inviteCode !== code) { const e = new Error('Invitación no válida'); e.code = 'permission-denied'; throw e; }
+      d.guestUids = [...new Set([...(d.guestUids || []), user.uid])];
+      d.guests = { ...(d.guests || {}), [user.uid]: { ...profile, code, joinedAt: d.guests?.[user.uid]?.joinedAt || Date.now() } };
+      if (participant && d.status === 'open') d.participants = [...new Set([...(d.participants || []), 'g_' + user.uid])];
+      if (colName === 'parties' && rsvp) d.rsvp = { ...(d.rsvp || {}), ['g_' + user.uid]: rsvp === true ? { s: 'si', n: 1 } : rsvp };
+      persist(); emit(colName); return { id, ...d };
+    },
+    async guestLeave(fid, colName, id) {
+      const d = col(colName)[id]; if (!d) return; const g = 'g_' + user.uid;
+      d.guestUids = (d.guestUids || []).filter(u => u !== user.uid); d.guests = { ...(d.guests || {}) }; delete d.guests[user.uid];
+      if (d.status === 'open') d.participants = (d.participants || []).filter(p => p !== g);
+      if (d.rsvp) { d.rsvp = { ...d.rsvp }; delete d.rsvp[g]; }
+      if (d.lobby) { d.lobby = { ...d.lobby }; delete d.lobby[g]; }
+      persist(); emit(colName);
+    },
     async createFamily() { return 'demo'; },
     async lookupInvite(code) { return code.toUpperCase() === load().family.code ? { familyId: 'demo', familyName: load().family.name } : null; },
     async joinFamily() { },
@@ -149,6 +176,28 @@ async function firebaseBackend() {
       return fid;
     },
     setFamily(id) { fid = id; },
+    async getUserInfo() {
+      const s = await F.getDoc(F.doc(fs, 'users', user.uid)); const d = s.exists() ? s.data() : {};
+      fid = d.familyId || null;
+      return { familyId: d.familyId || null, guestOf: d.guestOf || [] };
+    },
+    async setGuestOf(list) { await F.setDoc(F.doc(fs, 'users', user.uid), { guestOf: clean(list) }, { merge: true }); },
+    // 🎟️ Unirse como invitado a un evento con el código del link (las reglas validan el código)
+    async guestJoin(famId, colName, id, code, profile, { participant = false, rsvp = false } = {}) {
+      const ref = F.doc(fs, `families/${famId}/${colName}`, id);
+      const upd = { guestUids: F.arrayUnion(user.uid), [`guests.${user.uid}`]: clean({ ...profile, code, joinedAt: Date.now() }) };
+      if (participant) upd.participants = F.arrayUnion('g_' + user.uid);
+      if (colName === 'parties' && rsvp) upd[`rsvp.g_${user.uid}`] = rsvp === true ? { s: 'si', n: 1 } : rsvp;
+      await F.updateDoc(ref, upd);
+      const s = await F.getDoc(ref); return s.exists() ? { id: s.id, ...s.data() } : null;
+    },
+    async guestLeave(famId, colName, id, wasParticipant) {
+      const ref = F.doc(fs, `families/${famId}/${colName}`, id), g = 'g_' + user.uid;
+      const upd = { guestUids: F.arrayRemove(user.uid), [`guests.${user.uid}`]: F.deleteField() };
+      if (colName === 'exchanges') { if (wasParticipant) upd.participants = F.arrayRemove(g); upd[`lobby.${g}`] = F.deleteField(); }
+      if (colName === 'parties') upd[`rsvp.${g}`] = F.deleteField();
+      await F.updateDoc(ref, upd);
+    },
     async createFamily(name) {
       const ref = F.doc(F.collection(fs, 'families'));
       const code = Math.random().toString(36).slice(2, 8).toUpperCase();

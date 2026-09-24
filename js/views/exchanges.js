@@ -1,5 +1,6 @@
 // 🎁 Intercambios: sorteo secreto, listas de deseos y revelación con animación
-import { S, hooks, members, member, useSub, isAdult, notify, onCleanup } from '../store.js';
+import { S, hooks, members, member, useSub, isAdult, notify, onCleanup, peopleOf } from '../store.js';
+import { inviteCard, syncPeople, leaveEvent, remindersCard } from '../guest.js';
 import { esc, avatar, fmtDate, fmtTime, today0, isoDate, parseDate, modal, memberPicker, toast, money, daysBetween, confirmBox } from '../ui.js';
 import { THEMES, renderScene } from '../themes.js';
 import { startCountdowns } from './home.js';
@@ -80,14 +81,14 @@ function exchangeForm(x = null, preset = 'navidad') {
       <div class="frow"><div class="field"><label>Presupuesto por regalo ($)</label><input class="input" type="number" min="0" step="50" name="budget" value="${esc(e.budget ?? '')}"></div>
         <div class="field"><label>Lugar</label><input class="input" name="location" value="${esc(e.location || '')}" placeholder="Casa de la abuela"></div></div>
       <div class="field"><label>Reglas o dinámica</label><input class="input" name="rules" value="${esc(e.rules || '')}" placeholder="Regalo + carta escrita a mano 💌"></div>
-      <div class="field"><label>Participantes</label>${memberPicker('participants', members(), e.participants || [])}</div>
+      <div class="field"><label>Participantes</label>${memberPicker('participants', peopleOf(x), e.participants || [])}${x && Object.keys(x.guests || {}).length ? '<div class="tiny muted mt-s">🎟️ Incluye a tus invitados de fuera</div>' : ''}</div>
       <div class="field"><label>Parejas que NO pueden tocarse entre sí (ej. esposos)</label>
         <div id="excl" class="col"></div><button type="button" class="btn sm" id="addEx" style="align-self:flex-start">＋ Agregar pareja</button>
         <input type="hidden" name="exclusions" value="${esc(exText)}"></div>
       ${x && x.status === 'drawn' ? '<p class="small" style="color:#f59e0b;font-weight:800">⚠️ Si cambias participantes o parejas, tendrás que rehacer el sorteo.</p>' : ''}`,
     onOpen(form) {
       const box = form.querySelector('#excl'), hidden = form.querySelector('[name=exclusions]');
-      const opts = (sel) => members().map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
+      const opts = (sel) => peopleOf(x).map(m => `<option value="${m.id}" ${m.id === sel ? 'selected' : ''}>${esc(m.name)}</option>`).join('');
       const sync = () => hidden.value = [...box.querySelectorAll('.exrow')].map(r => [...r.querySelectorAll('select')].map(s => s.value).join(',')).join(';');
       const addRow = (a, b) => {
         const r = document.createElement('div'); r.className = 'row exrow';
@@ -151,7 +152,8 @@ export const exchangeDetail = {
     const x = S.data.exchanges.find(e => e.id === id);
     if (!x) return `<div class="card empty"><div class="big">🔍</div>No encontramos este intercambio. <a class="link" href="#/intercambios">Volver</a></div>`;
     const [k, em, label] = typeInfo(x.type);
-    const isOrg = x.createdBy === S.user.uid || S.me.role === 'admin';
+    const isOrg = !S.guest && (x.createdBy === S.user.uid || S.me.role === 'admin');
+    if (isOrg || isAdult()) syncPeople('exchanges', x);
     const asgs = useSub('asg-' + id, `exchanges/${id}/assignments`, (isOrg || x.status === 'revealed') ? {} : { where: ['giverUid', '==', S.user.uid] }) || [];
     const wishes = useSub('wish-' + id, `exchanges/${id}/wishes`, {}) || [];
     const claims = useSub('claims-' + id, `exchanges/${id}/claims`, { where: ['ownerUid', '!=', S.user.uid] }) || [];
@@ -171,7 +173,7 @@ export const exchangeDetail = {
         <div class="row mb" style="margin-bottom:10px">${avatar(m)}<div class="grow"><div class="bold">${esc(m.name)}${highlight ? ' <span class="chip accent">🎯 Tu amigo secreto</span>' : ''}</div><div class="tiny muted">${ws.length} deseo${ws.length === 1 ? '' : 's'}${!isOwnerView && got ? ` · 🔒 ${got} apartado${got === 1 ? '' : 's'}` : ''}</div></div>
         ${canEdit ? `<button class="icon-btn" data-act="addWish" data-m="${m.id}" title="Agregar deseo">＋</button>` : ''}</div>
         <div class="col" style="gap:8px">${ws.map(w => wishCard(w, { canEdit, isOwnerView, claim: isOwnerView ? null : claims.find(c => c.id === w.id) })).join('') || `<div class="tiny muted">${isOwnerView ? 'Agrega lo que te gustaría con el botón ＋ (puedes pegar links de Amazon, Mercado Libre…)' : 'Sin deseos todavía'}</div>`}</div>
-        ${isOwnerView && ws.length ? '<div class="tiny muted mt-s">🤫 Tu familia puede apartar tus deseos sin que tú lo veas.</div>' : ''}</div>`;
+        ${isOwnerView && ws.length ? `<div class="tiny muted mt-s">🤫 ${S.guest ? 'Los demás' : 'Tu familia'} puede${S.guest ? 'n' : ''} apartar tus deseos sin que tú lo veas.</div>` : ''}</div>`;
     };
 
     // Sección central según estado
@@ -185,7 +187,7 @@ export const exchangeDetail = {
         <div class="lobby-title"><span class="live-dot"></span> SALA DEL SORTEO EN VIVO</div>
         <h2 style="font-size:24px;font-weight:900;margin-top:6px">${inCount === ps.length ? '¡Ya están todos! 🎉' : `${inCount} de ${ps.length} en la sala`}</h2>
         <p class="muted bold small">Cuando entren, el organizador lanza el sorteo y todos lo ven al mismo tiempo. Cada quien descubre sólo a quién le regala 🤫</p>
-        <div class="lobby-grid">${ps.map(p => `<div class="lobby-p ${here(p.id) ? 'in' : ''}">${avatar(p, here(p.id) ? 'lg live' : 'lg')}<div class="tiny bold ellipsis">${esc(p.name)}</div><div class="tiny ${here(p.id) ? '' : 'muted'}">${here(p.id) ? '✅ Listo' : p.uid ? '⏳ Esperando' : '📱 Sin cuenta'}</div></div>`).join('')}</div>
+        <div class="lobby-grid">${ps.map(p => `<div class="lobby-p ${here(p.id) ? 'in' : ''}">${avatar(p, here(p.id) ? 'lg live' : 'lg')}<div class="tiny bold ellipsis">${esc(p.name)}</div><div class="tiny ${here(p.id) ? '' : 'muted'}">${here(p.id) ? '✅ Listo' : p.uid ? '⏳ Esperando' : '📱 Sin cuenta'}</div>${p.guest ? '<div class="tiny guest-tag">🎟️ Invitado</div>' : ''}</div>`).join('')}</div>
         ${(x.participants || []).includes(S.me.id) ? (meIn ? '<div class="chip accent mt">🙋 Estás en la sala</div>' : `<button class="btn primary lg mt" data-act="joinLobby" data-id="${id}">🙋 Entrar a la sala</button>`) : ''}
         ${isOrg ? `<div class="divider">Organizador</div><button class="btn primary lg" data-act="draw" data-id="${id}">🎲 Lanzar sorteo en vivo</button>
           <button class="btn sm mt" data-act="nudge" data-id="${id}">📣 Avisar a los que faltan</button>` : '<p class="small muted mt">El organizador lanzará el sorteo en cuanto estén todos.</p>'}
@@ -195,7 +197,7 @@ export const exchangeDetail = {
         <div class="list">${asgs.map(a => `<div class="item">${avatar(member(a.giverId))}<b class="grow">${esc(member(a.giverId)?.name || '?')}</b><span style="font-size:22px">🎁➜</span><b class="grow" style="text-align:right">${esc(member(a.receiverId)?.name || '?')}</b>${avatar(member(a.receiverId))}</div>`).join('')}</div></section>`;
     } else {
       center = `<section class="card deco center">
-        ${!iAmIn ? `<div style="font-size:50px">👀</div><p class="bold">No participas en este intercambio, pero puedes ver las listas de deseos.</p>` :
+        ${!iAmIn ? `<div style="font-size:50px">👀</div><p class="bold">${S.guest ? 'Te uniste cuando el sorteo ya se había hecho: puedes ver las listas de deseos. Si quieres entrar, pídele al organizador que rehaga el sorteo.' : 'No participas en este intercambio, pero puedes ver las listas de deseos.'}</p>` :
           !mine ? `<div class="skel" style="width:120px;height:120px;border-radius:50%;margin:10px auto"></div><div class="skel" style="width:60%;margin:10px auto"></div>` :
             revealed[id] ? `<div class="reveal-name">${avatar(recv, 'xl')}<div class="small bold muted">Te tocó regalarle a</div><h2>${esc(recv?.name || '?')}</h2>
               <p class="muted bold">¡Shhh! 🤫 Es un secreto${x.budget ? ` · Presupuesto ${money(x.budget)}` : ''}</p>
@@ -230,7 +232,7 @@ export const exchangeDetail = {
         </div></section>`;
     }
     return `
-      <a class="link" href="#/intercambios">‹ Intercambios</a>
+      <a class="link" href="#/${S.guest ? 'invitado' : 'intercambios'}">‹ ${S.guest ? 'Mis invitaciones' : 'Intercambios'}</a>
       <section class="card xhero deco mt">
         <div class="xhero-inner">
           <div class="row between wrap"><span class="chip accent">${em} ${label}</span>${isOrg ? `<button class="btn sm" data-act="edit" data-id="${id}">✏️ Editar</button>` : ''}</div>
@@ -241,11 +243,15 @@ export const exchangeDetail = {
           ${x.rules ? `<p class="bold mt" style="font-size:16px">📜 ${esc(x.rules)}</p>` : ''}
           ${future ? `<div class="countdown" data-cd="${target.getTime()}">${['días', 'horas', 'min', 'seg'].map(l => `<div class="cd-box"><b>--</b><span>${l}</span></div>`).join('')}</div>` : '<p class="bold mt">🎉 ¡El día llegó!</p>'}
           <div class="avatars mt">${ps.map(p => avatar(p)).join('')}</div>
+          <div class="row wrap mt" style="gap:8px"><button class="btn sm" data-act="addCal" data-col="exchanges" data-id="${id}">📅 Agregar a mi calendario</button></div>
         </div>
       </section>
+      ${S.guest ? '' : inviteCard('exchanges', x, isOrg || isAdult())}
+      ${!S.guest && (isOrg || isAdult()) ? remindersCard('exchanges', x, Object.keys(x.guests || {}).length ? (useSub('contacts-' + id, `exchanges/${id}/contacts`, {}) || []) : []) : ''}
       <div class="mt">${center}</div>${anonBox}
       <div class="page-head mt" style="margin-bottom:12px"><div><h1 style="font-size:30px">Listas de deseos</h1><p>Pistas para acertar con el regalo</p></div></div>
-      <div class="grid auto">${recv && revealed[id] ? wishList(recv, true) : ''}${(recv && revealed[id] ? others : ps).map(m => wishList(m, false)).join('')}</div>`;
+      <div class="grid auto">${recv && revealed[id] ? wishList(recv, true) : ''}${(recv && revealed[id] ? others : ps).map(m => wishList(m, false)).join('')}</div>
+      ${S.guest ? `<div class="center mt"><button class="btn ghost sm" data-act="leave" data-id="${id}">👋 Salir de este intercambio</button></div>` : ''}`;
   },
   after(root, [id]) {
     startCountdowns(root);
@@ -266,6 +272,7 @@ export const exchangeDetail = {
     }
   },
   actions: {
+    leave(el) { leaveEvent('exchanges', el.dataset.id); },
     edit(el) { exchangeForm(S.data.exchanges.find(e => e.id === el.dataset.id)); },
     async draw(el) {
       const x = S.data.exchanges.find(e => e.id === el.dataset.id);

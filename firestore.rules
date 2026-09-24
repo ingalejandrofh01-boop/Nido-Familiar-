@@ -13,6 +13,39 @@ service cloud.firestore {
     function isAdmin(fid) { return isMember(fid) && role(fid) == 'admin'; }
     function isAdult(fid) { return isMember(fid) && role(fid) in ['admin', 'adulto']; }
 
+    // 🎟️ Invitados de fuera (amigos, novia…): NO son miembros de la familia.
+    // Sólo ven los eventos a los que se unieron con el link (su uid queda en guestUids del evento).
+    function isGuestIn(d) { return signedIn() && request.auth.uid in d.get('guestUids', []); }
+    function gid() { return 'g_' + request.auth.uid; }
+    function onlyKeys(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
+    function mapOnlyKey(field, key) { return request.resource.data.get(field, {}).diff(resource.data.get(field, {})).affectedKeys().hasOnly([key]); }
+    function listSame(field) { return request.resource.data.get(field, []).toSet() == resource.data.get(field, []).toSet(); }
+    function listAddsOnly(field, v) {
+      return request.resource.data.get(field, []).toSet().difference(resource.data.get(field, []).toSet()).hasOnly([v])
+        && resource.data.get(field, []).toSet().difference(request.resource.data.get(field, []).toSet()).size() == 0;
+    }
+    function listRemovesOnly(field, v) {
+      return resource.data.get(field, []).toSet().difference(request.resource.data.get(field, []).toSet()).hasOnly([v])
+        && request.resource.data.get(field, []).toSet().difference(resource.data.get(field, []).toSet()).size() == 0;
+    }
+    // Unirse con el código del link (o actualizar su propio perfil de invitado)
+    function guestJoin(extraKeys) {
+      return signedIn()
+        && resource.data.get('inviteOpen', false) == true
+        && request.resource.data.guests[request.auth.uid].code == resource.data.inviteCode
+        && onlyKeys(['guestUids', 'guests'].concat(extraKeys))
+        && mapOnlyKey('guests', request.auth.uid)
+        && listAddsOnly('guestUids', request.auth.uid);
+    }
+    // Salirse del evento (quita sólo lo suyo)
+    function guestLeave(extraKeys) {
+      return isGuestIn(resource.data)
+        && onlyKeys(['guestUids', 'guests'].concat(extraKeys))
+        && listRemovesOnly('guestUids', request.auth.uid)
+        && mapOnlyKey('guests', request.auth.uid)
+        && !(request.auth.uid in request.resource.data.get('guests', {}));
+    }
+
     // Cada usuario guarda a qué familia pertenece
     match /users/{uid} {
       allow read, write: if signedIn() && request.auth.uid == uid;
@@ -70,20 +103,57 @@ service cloud.firestore {
         allow read, write: if isAdult(fid);
       }
 
+      // 🎟️ Intercambio compartido con invitados de fuera
+      match /exchanges/{eid} {
+        allow read: if signedIn() && request.auth.uid in resource.data.guestUids;
+        allow update: if !isMember(fid) && guestJoin(['participants'])
+          && (listSame('participants') || (resource.data.status == 'open' && listAddsOnly('participants', gid())));
+        allow update: if isGuestIn(resource.data) && onlyKeys(['lobby']) && mapOnlyKey('lobby', gid());
+        allow update: if guestLeave(['participants', 'lobby']) && mapOnlyKey('lobby', gid())
+          && (listSame('participants') || (resource.data.status == 'open' && listRemovesOnly('participants', gid())));
+      }
+      // 🎟️ Fiesta compartida con invitados de fuera: confirman, apuntan qué llevan (no pueden borrar cosas)
+      match /parties/{pid} {
+        allow read: if signedIn() && request.auth.uid in resource.data.guestUids;
+        allow update: if !isMember(fid) && guestJoin(['rsvp']) && mapOnlyKey('rsvp', gid());
+        allow update: if isGuestIn(resource.data) && onlyKeys(['rsvp', 'items']) && mapOnlyKey('rsvp', gid())
+          && request.resource.data.get('items', []).size() >= resource.data.get('items', []).size();
+        allow update: if guestLeave(['rsvp']) && mapOnlyKey('rsvp', gid());
+      }
+
+      // 🔒 Teléfono y correo de los invitados (para recordatorios): sólo la familia y el propio invitado
+      match /{col}/{eid}/contacts/{cuid} {
+        allow read, write: if isMember(fid) && col in ['exchanges', 'parties'];
+        allow read, write: if col in ['exchanges', 'parties'] && request.auth.uid == cuid
+          && isGuestIn(get(/databases/$(database)/documents/families/$(fid)/$(col)/$(eid)).data);
+      }
+
       // Mensajes anónimos del intercambio
       match /exchanges/{eid}/anon/{tid} {
-        allow read, write: if isMember(fid);
+        allow read, write: if isMember(fid) || isGuestIn(get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)).data);
       }
-      // Intercambios: listas de deseos visibles para todos
+      // Intercambios: listas de deseos visibles para todos los del intercambio
       match /exchanges/{eid}/wishes/{wid} {
+        function exw() { return get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)).data; }
         allow read, write: if isMember(fid);
+        allow read: if isGuestIn(exw());
+        allow create: if isGuestIn(exw()) && request.resource.data.memberId == gid();
+        allow update: if isGuestIn(exw()) && resource.data.memberId == gid() && request.resource.data.memberId == gid();
+        allow delete: if isGuestIn(exw()) && resource.data.memberId == gid();
       }
       // 🔒 Regalos apartados: todos los ven MENOS el festejado (dueño del deseo)
       match /exchanges/{eid}/claims/{wid} {
-        function ownerUidOf(w) { return get(/databases/$(database)/documents/families/$(fid)/members/$(get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)/wishes/$(w)).data.memberId)).data.get('uid', ''); }
-        allow read: if isMember(fid) && resource.data.ownerUid != request.auth.uid;
-        allow create, update: if isMember(fid) && request.resource.data.ownerUid != request.auth.uid && request.resource.data.ownerUid == ownerUidOf(wid);
-        allow delete: if isMember(fid) && resource.data.ownerUid != request.auth.uid;
+        function wishOwner(w) { return get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)/wishes/$(w)).data.memberId; }
+        // dueño del deseo: un miembro (su uid está en su perfil) o un invitado (g_<uid>)
+        function ownerUidOf(w) {
+          return wishOwner(w).matches('^g_.*')
+            ? wishOwner(w).replace('^g_', '')
+            : get(/databases/$(database)/documents/families/$(fid)/members/$(wishOwner(w))).data.get('uid', '');
+        }
+        function inX() { return isMember(fid) || isGuestIn(get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)).data); }
+        allow read: if inX() && resource.data.ownerUid != request.auth.uid;
+        allow create, update: if inX() && request.resource.data.ownerUid != request.auth.uid && request.resource.data.ownerUid == ownerUidOf(wid);
+        allow delete: if inX() && resource.data.ownerUid != request.auth.uid;
       }
       // Sorteo secreto: cada quien sólo puede leer SU resultado.
       // El organizador (o admin) lo crea; tras "Revelar a todos", todos lo ven.
@@ -91,6 +161,7 @@ service cloud.firestore {
         function ex() { return get(/databases/$(database)/documents/families/$(fid)/exchanges/$(eid)).data; }
         function organizer() { return ex().createdBy == request.auth.uid || isAdmin(fid); }
         allow read: if isMember(fid) && (resource.data.giverUid == request.auth.uid || organizer() || ex().status == 'revealed');
+        allow read: if isGuestIn(ex()) && (resource.data.giverUid == request.auth.uid || ex().status == 'revealed');
         allow write: if isMember(fid) && organizer();
       }
     }

@@ -5,7 +5,7 @@ import { createBackend, isDemo } from './db.js';
 import { APP_NAME } from './config.js';
 import { THEMES, seasonFor, renderScene, renderDeco } from './themes.js';
 import { initFx, setFx, setIntensity, celebrate } from './fx.js';
-import { S, hooks, clearSubs, runCleanups, members } from './store.js';
+import { S, hooks, clearSubs, runCleanups, members, guestPerson } from './store.js';
 import { esc, toast, today0, parseDate, avatar, isoDate } from './ui.js';
 import { openSOS } from './views/sos.js';
 import * as notifCenter from './notifications.js';
@@ -18,6 +18,7 @@ import { photosHome, albumView, bookView } from './views/photos.js';
 import { shopping, chores } from './views/lists.js';
 import dinero from './views/money.js';
 import chat from './views/chat.js';
+import { onMessages } from './views/chat.js';
 import { notes, donde } from './views/notes.js';
 import { familia, perfil } from './views/family.js';
 import ajustes from './views/settings.js';
@@ -50,12 +51,15 @@ import { maybeOnboard } from './onboarding.js';
 import { ensureRecurring, agendaRows, quincena } from './debts.js';
 import { unreadDMs } from './views/dm.js';
 import { initSync, syncPill, syncInfo, paint as paintSync } from './sync.js';
+import * as guest from './guest.js';
+import { alertLocal } from './notifications.js';
 
 const ROUTES = {
   inicio: home, agenda, intercambios: exchangesList, intercambio: exchangeDetail,
   fotos: photosHome, album: albumView, libro: bookView, listas: shopping, tareas: chores,
   dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor,
   recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView, cuentas: billsView, cuenta: billDetail, metas: goalsView, meta: goalDetail, resumen: wrappedView, documentos: docsView, mapa: memMap,
+  invitado: guest.guestHome,
   tesoro: { render: (p) => p[0] ? huntDetail.render(p) : huntsList.render(), after: (r, p) => { if (p[0]) huntDetail.after(r, p); }, actions: { ...huntsList.actions, ...huntDetail.actions } }
 };
 export const NAV = [
@@ -150,10 +154,13 @@ document.addEventListener('pointerdown', e => {
 let rT; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => { const id = document.body.dataset.theme; if (id) document.querySelector('#scene .scene-deco').innerHTML = renderDeco(id); }, 300); });
 
 // ---------------- RUTAS ----------------
+const GUEST_ROUTES = ['invitado', 'intercambio', 'fiesta'];
 function parseHash() {
   const h = location.hash.replace(/^#\/?/, '');
   const [name, ...params] = h.split('/').map(decodeURIComponent);
-  return { name: ROUTES[name] ? name : 'inicio', params };
+  // 🎟️ Un invitado sólo puede estar en sus invitaciones y en los eventos compartidos
+  if (S.guest) return GUEST_ROUTES.includes(name) && (name === 'invitado' || params[0]) ? { name, params } : { name: 'invitado', params: [] };
+  return { name: ROUTES[name] && name !== 'invitado' ? name : 'inicio', params };
 }
 hooks.go = (path) => { location.hash = '#/' + path; };
 // Ir a una sección y ejecutar una de sus acciones (lo usa el botón ＋)
@@ -163,7 +170,33 @@ hooks.runAction = (route, act, ds = {}, pre) => {
   if (S.route.name === route) doIt(); else { location.hash = '#/' + route; setTimeout(doIt, 380); }
 };
 
+function guestShell() {
+  $app.innerHTML = `
+    ${S.isDemo ? `<div class="demo-banner" data-act="demoInfo">🧪 Modo demo · estás viendo como invitada</div>` : ''}
+    <header class="mtop"><a href="#/invitado" class="mtop-me">${avatar(S.me, 'sm')}</a><div class="grow"><div class="brand-name" style="font-size:20px">${esc(APP_NAME)}</div><div class="brand-fam">🎟️ Invitado${S.family?.name ? ' · ' + esc(S.family.name) : ''}</div></div>${syncPill()}</header>
+    <div class="shell guest-shell">
+      <aside class="sidebar">
+        <div class="brand"><span class="brand-logo">🪺</span><div class="grow"><div class="brand-name">${esc(APP_NAME)}</div><div class="brand-fam">🎟️ Invitado${S.family?.name ? ' · ' + esc(S.family.name) : ''}</div></div></div>
+        <div class="side-sync">${syncPill()}</div>
+        <a class="nav-link" data-r="invitado" href="#/invitado"><span class="ico">🎟️</span>Mis invitaciones</a>
+        <div id="guest-nav"></div>
+        <div class="nav-sep"></div>
+        <a class="nav-link" data-act="guestProfile" href="#/invitado"><span class="ico">${avatar(S.me, 'sm')}</span>Mi perfil</a>
+        ${S.myFamilyId ? '<a class="nav-link" data-act="goFamily" href="#/inicio"><span class="ico">🏠</span>Ir a mi familia</a>' : ''}
+        <a class="nav-link" data-act="logout" href="#/invitado"><span class="ico">🚪</span>Cerrar sesión</a>
+      </aside>
+      <main class="main" id="view"></main>
+    </div>`;
+  paintGuestNav();
+}
+function paintGuestNav() {
+  const box = document.getElementById('guest-nav'); if (!box) return;
+  const items = [...S.data.exchanges.map(x => ['intercambio', x, '🎁']), ...S.data.parties.map(x => ['fiesta', x, x.emoji || '🎉'])].sort((a, b) => (a[1].date || '').localeCompare(b[1].date || ''));
+  box.innerHTML = items.length ? `<div class="nav-group">Eventos</div>${items.map(([r, x, e]) => `<a class="nav-link ${S.route.name === r && S.route.params[0] === x.id ? 'active' : ''}" href="#/${r}/${x.id}"><span class="ico">${esc(e)}</span><span class="ellipsis">${esc(x.title)}</span></a>`).join('')}` : '';
+}
+
 function shell() {
+  if (S.guest) return guestShell();
   const nav = NAV.filter(n => !n.adult || ['admin', 'adulto'].includes(S.me?.role));
   $app.innerHTML = `
     ${S.isDemo ? `<div class="demo-banner" data-act="demoInfo">🧪 Modo demo · toca para saber más</div>` : ''}
@@ -174,6 +207,7 @@ function shell() {
         <div class="side-actions"><button class="btn primary side-add" data-act="quickAdd">${icon('mas_add')} Agregar</button><button class="bell" data-act="search" aria-label="Buscar" title="Buscar (Ctrl+K)">${icon('buscar')}</button></div>
         <div class="side-sync">${syncPill()}</div>
         ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${icon(n.r) || n.ico}</span>${n.t}<b class="tab-badge side" data-tb="${n.r}" hidden></b></a>`).join('')}
+        ${(S.guestOf || []).length ? `<div class="nav-sep"></div><a class="nav-link" data-act="goGuest" href="#/inicio"><span class="ico">🎟️</span>Invitaciones de otras familias</a>` : ''}
       </aside>
       <main class="main" id="view"></main>
     </div>
@@ -187,6 +221,7 @@ function updateTabBadges() {
   const rows = agendaRows().filter(r => r.from === S.me.id && r.due <= q.end);
   const late = rows.some(r => r.due < t);
   let seen = 0; try { seen = +localStorage.getItem('nido-chat-seen') || 0; } catch { }
+  seen = Math.max(seen, S.me.chatReadAt || 0);
   const chat = S.route.name === 'chat' ? 0 : S.data.messages.filter(m => m.author !== S.me.id && (m.createdAt || 0) > seen).length + unreadDMs();
   const set = (r, n, cls = '') => document.querySelectorAll(`[data-tb="${r}"]`).forEach(b => { b.hidden = !n; b.textContent = n > 9 ? '9+' : n; b.className = 'tab-badge ' + (b.classList.contains('side') ? 'side ' : '') + cls; });
   set('cuentas', rows.length, late ? 'late' : ''); set('chat', chat);
@@ -215,8 +250,7 @@ function render() {
   V.after && V.after(view, params);
   animateView(view, routeChanged); routeChanged = false;
   if (name === 'chat') { try { localStorage.setItem('nido-chat-seen', String(Date.now())); } catch { } }
-  updateTabBadges();
-  notifCenter.updateBadges();
+  if (S.guest) paintGuestNav(); else { updateTabBadges(); notifCenter.updateBadges(); }
   const me = document.querySelector('.mtop-me'); if (me && S.me) me.innerHTML = avatar(S.me, 'sm');
 }
 hooks.rerender = () => { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); };
@@ -224,6 +258,7 @@ hooks.rerender = () => { if (renderQueued) return; renderQueued = true; requestA
 function onRoute() {
   if (!S.me) return;
   S.route = parseHash();
+  if (S.guest && S.route.name === 'invitado' && !/^#\/invitado/.test(location.hash)) history.replaceState(null, '', '#/invitado');
   const key = S.route.name + '/' + S.route.params.join('/');
   if (key !== lastRouteKey) {
     clearSubs(); lastRouteKey = key; markNav(S.route.name); routeChanged = true;
@@ -243,14 +278,24 @@ const globalActions = {
   demoInfo: () => auth.demoInfo(),
   syncInfo: () => syncInfo(),
   quickAdd: () => openQuickAdd(),
-  search: () => openSearch()
+  search: () => openSearch(),
+  goGuest: () => { const g = (S.guestOf || [])[0]; if (g) startGuest(g.fid); },
+  goFamily: () => { try { sessionStorage.removeItem('nido-mode'); } catch { } if (S.myFamilyId) { S.db.setFamily(S.myFamilyId); location.hash = '#/inicio'; startFamily(); } },
+  switchGuest: (el) => startGuest(el.dataset.fid),
+  guestProfile: (el, e) => { e?.preventDefault(); guest.editGuestProfile(); },
+  invite: (el) => guest.openInvite(el.dataset.col, el.dataset.id),
+  inviteImage: async (el) => { const m = await import('./invitecard.js'); m.openInviteImage(el.dataset.col, el.dataset.id); },
+  addCal: (el) => { const x = (S.data[el.dataset.col] || []).find(d => d.id === el.dataset.id); if (x) guest.addToCalendar(el.dataset.col, x); },
+  remindSent: (el) => guest.markReminder(el)
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act;
   const V = ROUTES[S.route.name];
   const fn = (V && V.actions && V.actions[act]) || globalActions[act] || auth.actions[act];
-  if (fn) { e.preventDefault(); playFor(act, el); fn(el, e); }
+  // los links reales (WhatsApp, correo) sí deben abrirse aunque tengan acción
+  const realLink = el.tagName === 'A' && /^(https?:|mailto:)/.test(el.getAttribute('href') || '');
+  if (fn) { if (!realLink) e.preventDefault(); playFor(act, el); fn(el, e); }
 });
 document.addEventListener('change', e => {
   const el = e.target.closest('[data-change]'); if (!el) return;
@@ -276,13 +321,13 @@ const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', tx
 function stopFamily() { familyUnsub && familyUnsub(); colUnsubs.forEach(u => u()); colUnsubs = []; familyUnsub = null; clearSubs(); }
 
 async function startFamily() {
-  stopFamily();
+  stopFamily(); S.guest = false; try { sessionStorage.removeItem('nido-mode'); } catch { }
   let membersLoaded = false, famLoaded = false, started = false;
   const maybeStart = () => {
     if (!membersLoaded || !famLoaded) return;
     S.me = S.data.members.find(m => m.uid === S.user.uid) || null;
     if (!S.me) { auth.claimProfile(); started = false; return; }
-    if (!started) { started = true; shell(); paintSync(); initGestures(); setTimeout(maybeOnboard, 1200); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); syncLocationSharing(); }
+    if (!started) { started = true; shell(); paintSync(); initGestures(); setTimeout(maybeOnboard, 1200); setTimeout(() => guest.checkDueReminders(alertLocal), 3500); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); syncLocationSharing(); }
     else hooks.rerender();
   };
   familyUnsub = S.db.watchFamily(f => {
@@ -295,7 +340,7 @@ async function startFamily() {
   });
   for (const [name, opts] of Object.entries(COLS)) {
     colUnsubs.push(S.db.watch(name, opts, rows => {
-      if (name === 'messages') rows = rows.reverse();
+      if (name === 'messages') { rows = rows.reverse(); onMessages(rows); }
       S.data[name] = rows;
       if (name === 'members') { membersLoaded = true; const had = !!S.me; maybeStart(); if (had) return; return; }
       if (name === 'backgrounds') refreshTheme();
@@ -311,6 +356,41 @@ async function startFamily() {
   }
 }
 export async function enterFamily() { await startFamily(); }
+
+// ---------------- 🎟️ Modo invitado ----------------
+const EMPTY = () => Object.fromEntries(Object.entries(S.data).map(([k, v]) => [k, Array.isArray(v) ? [] : v]));
+function startGuest(fid, focus) {
+  stopFamily();
+  S.guest = true; S.db.setFamily(fid); S.data = EMPTY();
+  try { sessionStorage.setItem('nido-mode', 'guest:' + fid); } catch { }
+  const entry = (S.guestOf || []).find(g => g.fid === fid);
+  S.family = { id: fid, name: entry?.familyName || '', theme: 'auto' };
+  const uid = S.user.uid, prof = guest.savedProfile() || {};
+  let got = { x: false, p: false }, started = false; const prev = {};
+  const build = () => {
+    // Personas visibles: sólo la copia pública que trae cada evento (nombre, emoji, color, avatar)
+    const people = new Map();
+    for (const d of [...S.data.exchanges, ...S.data.parties]) for (const [id, p] of Object.entries(d.people || {})) people.set(id, { id, ...p });
+    S.data.members = [...people.values()];
+    const mine = [...S.data.exchanges, ...S.data.parties].map(d => d.guests?.[uid]).find(Boolean) || prof;
+    S.me = { ...guestPerson(uid, { name: mine.name || S.user.name, emoji: mine.emoji, color: mine.color }), role: 'invitado' };
+    const fn = [...S.data.exchanges, ...S.data.parties].map(d => d.familyName).find(Boolean); if (fn) S.family.name = fn;
+  };
+  const onRows = (key) => (rows) => {
+    // Avisos locales: el sorteo ya se hizo / se reveló
+    if (key === 'exchanges') for (const x of rows) { const was = prev[x.id]; prev[x.id] = x.status; if (was && was !== x.status && x.status !== 'open') alertLocal({ icon: x.status === 'revealed' ? '🎊' : '🎲', title: x.status === 'revealed' ? `¡Gran revelación! ${x.title}` : `¡Ya se hizo el sorteo! ${x.title}`, body: x.status === 'revealed' ? 'Entra a ver quién le regaló a quién' : 'Entra y descubre a quién le regalas 🤫', link: 'intercambio/' + x.id }); }
+    S.data[key] = rows; got[key === 'exchanges' ? 'x' : 'p'] = true;
+    if (!got.x || !got.p) return;
+    build();
+    if (!started) {
+      started = true; shell(); paintSync(); initGestures(); lastRouteKey = '';
+      if (focus) location.hash = `#/${guest.KIND[focus.k].route}/${focus.id}`;
+      onRoute();
+    } else hooks.rerender();
+  };
+  colUnsubs.push(S.db.watch('exchanges', { where: ['guestUids', 'array-contains', uid] }, onRows('exchanges')));
+  colUnsubs.push(S.db.watch('parties', { where: ['guestUids', 'array-contains', uid] }, onRows('parties')));
+}
 auth.setEnterFamily(enterFamily);
 
 // ---------------- Instalar como app ----------------
@@ -330,12 +410,22 @@ async function boot() {
   }
   S.db.onAuth(async user => {
     S.user = user; S.me = null;
-    if (!user) { stopFamily(); S.family = null; auth.renderLogin(); return; }
+    if (!user) { stopFamily(); S.family = null; S.guest = false; auth.renderLogin(); return; }
     try {
-      const fid = await S.db.getMyFamilyId();
-      if (!fid) { auth.renderFamilySetup(); return; }
-      S.db.setFamily && S.db.setFamily(fid);
-      await startFamily();
+      const info = await S.db.getUserInfo();
+      const fid = info.familyId; S.myFamilyId = fid; S.guestOf = info.guestOf || [];
+      const goHome = () => { if (fid) { S.db.setFamily(fid); startFamily(); } else if (S.guestOf.length) startGuest(S.guestOf[0].fid); else auth.renderFamilySetup(); };
+      // 🎟️ Llegó con un link de invitación
+      const inv = guest.pendingInvite();
+      if (inv) {
+        if (fid && inv.fid === fid) { guest.clearInvite(); location.hash = `#/${guest.KIND[inv.k].route}/${inv.id}`; S.db.setFamily(fid); await startFamily(); return; }
+        guest.renderJoin(inv, { onJoined: (i) => startGuest(i.fid, i), onCancel: goHome });
+        return;
+      }
+      let mode = null; try { mode = sessionStorage.getItem('nido-mode'); } catch { }
+      const gf = mode?.startsWith('guest:') ? mode.slice(6) : null;
+      if (gf && S.guestOf.some(g => g.fid === gf)) { startGuest(gf); return; }
+      goHome();
     } catch (e) { console.error(e); toast('⚠️ ' + e.message); auth.renderFamilySetup(); }
   });
 }

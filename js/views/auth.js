@@ -2,6 +2,7 @@
 import { S } from '../store.js';
 import { esc, toast, modal, EMOJIS_PEOPLE, COLORS } from '../ui.js';
 import { APP_NAME } from '../config.js';
+import { pendingInvite, KIND } from '../guest.js';
 
 const $app = () => document.getElementById('app');
 let enterFamily = () => { };
@@ -21,8 +22,8 @@ export function renderLogin(mode = 'login') {
   $app().innerHTML = `<div class="auth"><div class="card auth-card deco view-enter">
     <div class="auth-logo">🪺</div>
     <h1>${esc(APP_NAME)}</h1>
-    <p class="muted bold">El lugar de nuestra familia: fechas, regalos, recuerdos y más.</p>
-    ${S.isDemo ? `
+    ${pendingInvite() ? `<div class="inv-sees mt" style="text-align:left"><div class="bold">🎟️ ¡Te invitaron ${KIND[pendingInvite().k].noun === 'fiesta' ? 'a una fiesta' : 'a un intercambio'}!</div><div class="small">Entra o crea tu cuenta para unirte. Sólo verás ese evento, nada más de la familia.</div></div>` : '<p class="muted bold">El lugar de nuestra familia: fechas, regalos, recuerdos y más.</p>'}
+    ${S.isDemo && pendingInvite() ? `<button class="btn primary lg block mt" data-act="demoGuestLogin">🎟️ Entrar como invitada (Mariana)</button><button class="btn block mt-s" data-act="demoLogin">Entrar como Alejandro (familia)</button>` : S.isDemo ? `
       <button class="btn primary lg block mt" data-act="demoLogin">✨ Entrar a la demo</button>
       <p class="small muted mt">Estás en <b>modo demo</b>: los datos viven sólo en este navegador. Configura Firebase en <code>js/config.js</code> para usarla con toda tu familia.</p>
     ` : `
@@ -53,6 +54,7 @@ export function renderFamilySetup() {
       <div class="field"><label>Código de invitación</label><input class="input" name="code" required placeholder="ABC123" style="text-transform:uppercase;letter-spacing:4px;font-weight:900;text-align:center"></div>
       <button class="btn block">🔑 Unirme con código</button>
     </form>
+    <p class="small muted mt">🎟️ ¿Sólo te invitaron a un intercambio o una fiesta? Abre el link que te mandaron; no necesitas crear una familia.</p>
     <p class="small mt"><a class="link" data-act="logout">Cerrar sesión</a></p>
   </div></div>`;
 }
@@ -84,6 +86,7 @@ export function demoInfo() {
 
 export const actions = {
   async demoLogin() { await S.db.signInDemo(); },
+  async demoGuestLogin() { await S.db.signInDemoGuest(); },
   async google() { try { await S.db.signInGoogle(); } catch (e) { toast('⚠️ ' + errMsg(e)); } },
   toSignup() { renderLogin('signup'); },
   toLogin() { renderLogin('login'); },

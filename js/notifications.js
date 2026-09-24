@@ -24,11 +24,15 @@ export function updateBadges() {
 export function onData(rows) {
   if (!S.me) { setTimeout(() => onData(rows), 800); return; }
   const fresh = mine(rows).filter(n => n.createdAt > bootTime - 5000 && n.createdAt > seenAt() && !shown.has(n.id));
-  fresh.forEach(n => { shown.add(n.id); banner(n); systemNotify(n.title, n.body, n.link); });
+  const here = (n) => !document.hidden && n.link && location.hash.replace(/^#\/?/, '') === n.link; // ya estás viendo eso (p. ej. el chat privado)
+  fresh.forEach(n => { shown.add(n.id); if (here(n)) return; banner(n); systemNotify(n.title, n.body, n.link); });
   mine(rows).forEach(n => shown.add(n.id));
   updateBadges();
   if (panel && panel.isConnected) renderPanel();
 }
+
+// Aviso sólo en este dispositivo (sin guardar en la campanita): mensajes nuevos del chat
+export function alertLocal(n) { banner(n); systemNotify(n.title, n.body, n.link, n.link); }
 
 // Banner dentro de la app
 function banner(n) {
@@ -43,10 +47,10 @@ function banner(n) {
 }
 
 // Notificación del sistema (Android / iPhone con la app instalada)
-export async function systemNotify(title, body, link) {
+export async function systemNotify(title, body, link, tag) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return;
   if (!document.hidden && document.hasFocus()) return; // si estás viendo la app basta el banner
-  const opts = { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { link: link || '' }, vibrate: [60, 40, 60], tag: 'nido-' + Date.now() };
+  const opts = { body, icon: 'icons/icon-192.png', badge: 'icons/icon-192.png', data: { link: link || '' }, vibrate: [60, 40, 60], tag: tag ? 'nido-' + tag : 'nido-' + Date.now(), renotify: !!tag };
   try { const reg = await navigator.serviceWorker?.getRegistration(); if (reg) return reg.showNotification(title, opts); } catch { }
   try { new Notification(title, opts); } catch { }
 }
