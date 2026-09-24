@@ -14,7 +14,7 @@ const uid6 = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(
 export const newId = uid6;
 
 // ---------------- Almacenamiento seguro (demo) ----------------
-const LS_KEY = 'nido-demo-v9';
+const LS_KEY = 'nido-demo-v10';
 let mem = null;
 function load() {
   if (mem) return mem;
@@ -110,7 +110,11 @@ async function firebaseBackend() {
   ]);
   const app = initializeApp(firebaseConfig);
   const auth = A.getAuth(app);
-  const fs = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }) });
+  // experimentalAutoDetectLongPolling: si la red del celular (datos móviles, proxys del operador) bloquea la conexión
+// en tiempo real, Firebase cambia solo a otro método que sí pasa.
+  let fs;
+  try { fs = F.initializeFirestore(app, { localCache: F.persistentLocalCache({ tabManager: F.persistentMultipleTabManager() }), experimentalAutoDetectLongPolling: true }); }
+  catch (e) { console.warn('Caché local no disponible, sigo sin ella', e); fs = F.initializeFirestore(app, { experimentalAutoDetectLongPolling: true }); }
   let fid = null;
   let user = null;
   const mapUser = u => u ? { uid: u.uid, name: u.displayName || (u.email || '').split('@')[0], email: (u.email || '').toLowerCase(), photo: u.photoURL, verified: u.emailVerified } : null;

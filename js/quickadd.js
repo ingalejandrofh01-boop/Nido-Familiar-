@@ -3,8 +3,12 @@ import { S, hooks, isAdult } from './store.js';
 import { esc, modal, toast } from './ui.js';
 import { openEventForm } from './views/agenda.js';
 import { sfx } from './reveal.js';
+import { openVoice } from './voice.js';
+import { openScanner } from './scanner.js';
 
 const ITEMS = () => [
+  ['🎙️', 'Dictar', 'Dilo y se agrega', () => openVoice()],
+  ['🧾', 'Escanear ticket', 'Gasto con foto', () => openScanner()],
   ['📅', 'Evento', 'Cita, junta, viaje', () => openEventForm()],
   ['🤝', 'Cuenta dividida', 'Renta, súper, préstamo', () => hooks.runAction('cuentas', 'newBill')],
   isAdult() && ['💸', 'Gasto familiar', 'Lo que gastó la casa', () => hooks.runAction('dinero', 'new', { t: 'familia' }, 'mtab')],
@@ -27,7 +31,7 @@ export function openQuickAdd() {
   const items = ITEMS();
   const m = modal({
     title: '＋ ¿Qué quieres agregar?',
-    body: `<div class="qa-shop" data-qa-shop><span>🛒</span><input class="input" id="qa-shop" placeholder="Agregar a la lista del súper…" autocomplete="off" enterkeyhint="done"><button class="btn primary" type="button" data-qa-add>＋</button></div>
+    body: `<div class="qa-shop" data-qa-shop><span>🛒</span><input class="input" id="qa-shop" placeholder="Agregar a la lista del súper…" autocomplete="off" enterkeyhint="done"><button class="icon-btn" type="button" data-qa-mic aria-label="Dictar">🎙️</button><button class="btn primary" type="button" data-qa-add>＋</button></div>
       <div class="qa-grid">${items.map(([e, t, d], i) => `<button type="button" class="qa-i" data-i="${i}" style="--d:${i * 22}ms"><span class="qa-e">${e}</span><b>${t}</b><span class="tiny muted">${d}</span></button>`).join('')}</div>`,
     foot: '',
     onOpen(f, close) {
@@ -35,6 +39,7 @@ export function openQuickAdd() {
       const shop = f.querySelector('[data-qa-shop]'), inp = f.querySelector('#qa-shop');
       const add = async () => { const t = inp.value.trim(); if (!t) return; inp.value = ''; await S.db.add('shopping', { text: t, list: 'Súper', done: false, by: S.me.id }); try { sfx.pop(); navigator.vibrate && navigator.vibrate(15); } catch { } toast(`🛒 “${t}” agregado`); inp.focus(); };
       f.querySelector('[data-qa-add]').onclick = add;
+      f.querySelector('[data-qa-mic]').onclick = () => { close(); setTimeout(() => openVoice(), 120); };
       inp.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); add(); } });
     }
   });

@@ -23,7 +23,7 @@ export function syncLocationSharing() {
   if (me && me.sharing && me.until && me.until <= Date.now()) S.db.update('locations', me.id, { sharing: false }).catch(() => { });
 }
 
-function loadLeaflet() {
+export function loadLeaflet() {
   if (window.L) return Promise.resolve(window.L);
   return new Promise((res, rej) => {
     const css = document.createElement('link'); css.rel = 'stylesheet'; css.href = 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css'; document.head.appendChild(css);

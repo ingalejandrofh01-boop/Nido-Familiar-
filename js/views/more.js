@@ -7,8 +7,8 @@ import { icon } from '../icons.js';
 
 const GROUPS = [
   ['Principal', [['agenda', '📅', 'Agenda'], ['fotos', '📖', 'Libro familiar'], ['intercambios', '🎁', 'Regalos']]],
-  ['Juntos', [['fiestas', '🎉', 'Fiestas'], ['encuestas', '🗳️', 'Encuestas'], ['ruleta', '🎡', 'Ruleta'], ['retos', '🏅', 'Retos'], ['viajes', '✈️', 'Viajes'], ['recetas', '🍲', 'Recetario'], ['capsula', '⏳', 'Cápsula del tiempo'], ['arbol', '🌳', 'Árbol genealógico'], ['ubicacion', '📍', '¿Dónde andamos?']]],
-  ['Casa', [['menu', '🍽️', 'Menú semanal'], ['listas', '🛒', 'Compras'], ['tareas', '🧹', 'Tareas y puntos'], ['mascotas', '🐾', 'Mascotas'], ['dinero', '💰', 'Dinero'], ['metas', '🎯', 'Metas'], ['notas', '📝', 'Notas'], ['donde', '🔎', '¿Dónde está?']]],
+  ['Juntos', [['fiestas', '🎉', 'Fiestas'], ['encuestas', '🗳️', 'Encuestas'], ['ruleta', '🎡', 'Ruleta'], ['retos', '🏅', 'Retos'], ['viajes', '✈️', 'Viajes'], ['recetas', '🍲', 'Recetario'], ['capsula', '⏳', 'Cápsula del tiempo'], ['mapa', '🗺️', 'Mapa de recuerdos'], ['tesoro', '🏴‍☠️', 'Tesoro'], ['arbol', '🌳', 'Árbol genealógico'], ['ubicacion', '📍', '¿Dónde andamos?']]],
+  ['Casa', [['menu', '🍽️', 'Menú semanal'], ['listas', '🛒', 'Compras'], ['tareas', '🧹', 'Tareas y puntos'], ['mascotas', '🐾', 'Mascotas'], ['dinero', '💰', 'Dinero'], ['metas', '🎯', 'Metas'], ['documentos', '🪪', 'Documentos'], ['notas', '📝', 'Notas'], ['donde', '🔎', '¿Dónde está?']]],
   ['Nido', [['familia', '👨‍👩‍👧‍👦', 'Familia'], ['resumen', '🎁', 'Resumen del año'], ['ajustes', '⚙️', 'Ajustes']]]
 ];
 export default {

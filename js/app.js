@@ -38,6 +38,9 @@ import menuView from './views/menu.js';
 import { billsView, billDetail } from './views/bills.js';
 import { goalsView, goalDetail } from './views/goals.js';
 import { wrappedView } from './views/wrapped.js';
+import { docsView } from './views/docs.js';
+import { huntsList, huntDetail } from './views/hunt.js';
+import { memMap } from './views/memmap.js';
 import { icon } from './icons.js';
 import { openQuickAdd } from './quickadd.js';
 import { openSearch } from './search.js';
@@ -52,7 +55,8 @@ const ROUTES = {
   inicio: home, agenda, intercambios: exchangesList, intercambio: exchangeDetail,
   fotos: photosHome, album: albumView, libro: bookView, listas: shopping, tareas: chores,
   dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor,
-  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView, cuentas: billsView, cuenta: billDetail, metas: goalsView, meta: goalDetail, resumen: wrappedView
+  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView, cuentas: billsView, cuenta: billDetail, metas: goalsView, meta: goalDetail, resumen: wrappedView, documentos: docsView, mapa: memMap,
+  tesoro: { render: (p) => p[0] ? huntDetail.render(p) : huntsList.render(), after: (r, p) => { if (p[0]) huntDetail.after(r, p); }, actions: { ...huntsList.actions, ...huntDetail.actions } }
 };
 export const NAV = [
   { r: 'inicio', ico: '🏠', t: 'Inicio' },
@@ -69,6 +73,8 @@ export const NAV = [
   { r: 'viajes', ico: '✈️', t: 'Viajes' },
   { r: 'recetas', ico: '🍲', t: 'Recetario' },
   { r: 'capsula', ico: '⏳', t: 'Cápsula del tiempo' },
+  { r: 'mapa', ico: '🗺️', t: 'Mapa de recuerdos' },
+  { r: 'tesoro', ico: '🏴‍☠️', t: 'Búsqueda del tesoro' },
   { r: 'arbol', ico: '🌳', t: 'Árbol genealógico' },
   { r: 'ubicacion', ico: '📍', t: '¿Dónde andamos?' },
   { sep: 'Casa' },
@@ -78,6 +84,7 @@ export const NAV = [
   { r: 'mascotas', ico: '🐾', t: 'Mascotas' },
   { r: 'dinero', ico: '💰', t: 'Dinero' },
   { r: 'metas', ico: '🎯', t: 'Metas' },
+  { r: 'documentos', ico: '🪪', t: 'Documentos' },
   { r: 'notas', ico: '📝', t: 'Notas' },
   { r: 'donde', ico: '🔎', t: '¿Dónde está?' },
   { sep: 'Nido' },
@@ -262,10 +269,10 @@ const COLS = {
   members: {}, events: {}, exchanges: {}, albums: {}, photos: { orderBy: ['createdAt', 'asc'] },
   shopping: {}, chores: {}, expenses: {}, messages: { orderBy: ['createdAt', 'desc'], limit: 150 },
   notes: {}, inventory: {}, backgrounds: {}, rewards: {}, notifications: { orderBy: ['createdAt', 'desc'], limit: 80 },
-  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}, pets: {}, parties: {}, wheels: {}, spins: { orderBy: ['at', 'desc'], limit: 60 }, menus: {}, bills: {}, famgoals: {}
+  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}, pets: {}, parties: {}, wheels: {}, spins: { orderBy: ['at', 'desc'], limit: 60 }, menus: {}, bills: {}, famgoals: {}, docs: {}, hunts: {}, places: {}
 };
 // Colecciones privadas: families/{fid}/private/{uid}/...
-const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', txns: 'txns', myCats: 'categories', budgets: 'budgets', goals: 'goals' };
+const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', txns: 'txns', myCats: 'categories', budgets: 'budgets', goals: 'goals', myDocs: 'docs' };
 function stopFamily() { familyUnsub && familyUnsub(); colUnsubs.forEach(u => u()); colUnsubs = []; familyUnsub = null; clearSubs(); }
 
 async function startFamily() {

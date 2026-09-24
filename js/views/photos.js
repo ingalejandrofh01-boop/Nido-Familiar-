@@ -1,4 +1,5 @@
 // 📖 Libro familiar: capítulos (álbumes), fotos tipo polaroid y libro con páginas que se voltean
+import { exifGPS, placeForm } from './memmap.js';
 import { S, hooks, member, onCleanup, notify } from '../store.js';
 import { esc, fmtDate, isoDate, modal, toast, compressImage, pickFiles, confirmBox } from '../ui.js';
 import { THEMES } from '../themes.js';
@@ -37,8 +38,9 @@ async function uploadTo(albumId) {
   let n = 0;
   for (const f of files) {
     try {
+      const gps = await exifGPS(f);
       const thumb = await compressImage(f, S.isDemo ? 900 : 520, 0.72, S.isDemo ? 160000 : 70000);
-      const id = await S.db.add('photos', { albumId, caption: '', thumb, date: isoDate(new Date(f.lastModified || Date.now())), by: S.me.id });
+      const id = await S.db.add('photos', { albumId, caption: '', thumb, date: isoDate(new Date(f.lastModified || Date.now())), by: S.me.id, ...(gps ? { gps } : {}) });
       if (!S.isDemo) { const full = await compressImage(f, 1600, 0.82, 850000); await S.db.set('photoFiles', id, { data: full }); fullCache[id] = full; }
       const a = S.data.albums.find(x => x.id === albumId); if (a && !a.cover) await S.db.update('albums', albumId, { cover: thumb });
       n++;
@@ -60,7 +62,7 @@ function lightbox(list, idx) {
       <div class="small" style="opacity:.7">${p.date ? fmtDate(p.date, { year: true }) : ''}${member(p.by) ? ' · subida por ' + esc(member(p.by).name) : ''}</div>
       <div class="row wrap mt" style="justify-content:center">
         <button class="btn sm" data-cap>✏️ Pie de foto</button><button class="btn sm" data-cover>⭐ Portada</button>
-        <button class="btn sm" data-bg>🖼️ Usar de fondo</button><button class="btn sm" data-dl>⬇️ Descargar</button><button class="btn sm danger" data-del>🗑️</button></div>`;
+        <button class="btn sm" data-place>📍 Lugar</button><button class="btn sm" data-bg>🖼️ Usar de fondo</button><button class="btn sm" data-dl>⬇️ Descargar</button><button class="btn sm danger" data-del>🗑️</button></div>`;
     const src = await fullImage(p); const img = el.querySelector('img'); if (img && list[idx] === p) img.src = src;
   };
   el.addEventListener('click', async e => {
@@ -70,6 +72,13 @@ function lightbox(list, idx) {
     if (e.target.closest('[data-n]')) { idx = (idx + 1) % list.length; return show(); }
     if (e.target.closest('[data-cap]')) {
       modal({ title: 'Pie de foto', body: `<div class="field"><input class="input" name="c" value="${esc(p.caption || '')}" placeholder="¿Qué pasó en este momento?"></div>`, submit: async d => { await S.db.update('photos', p.id, { caption: d.c }); p.caption = d.c; show(); } });
+    }
+    if (e.target.closest('[data-place]')) {
+      const pls = S.data.places || [];
+      const m = modal({ title: '📍 ¿Dónde fue esta foto?', body: `<div class="list">${pls.map(x => `<button type="button" class="item clickable" data-pl="${x.id}" style="width:100%;text-align:left;border:0;color:inherit;font:inherit"><span class="emoji">${esc(x.emoji || '📍')}</span><b class="grow">${esc(x.name)}</b>${p.placeId === x.id ? '✅' : ''}</button>`).join('') || '<div class="empty small">Aún no hay lugares en el mapa</div>'}</div><button type="button" class="btn block mt" data-new>＋ Nuevo lugar</button>`, foot: '' });
+      m.el.querySelectorAll('[data-pl]').forEach(b => b.onclick = async () => { await S.db.update('photos', p.id, { placeId: b.dataset.pl }); p.placeId = b.dataset.pl; m.close(); toast('📍 Foto en el mapa'); });
+      m.el.querySelector('[data-new]').onclick = () => { m.close(); placeForm(null, { photoIds: [p.id], date: p.date, ...(p.gps || {}) }); };
+      return;
     }
     if (e.target.closest('[data-cover]')) { await S.db.update('albums', p.albumId, { cover: p.thumb }); toast('⭐ Portada actualizada'); }
     if (e.target.closest('[data-dl]')) { const a = document.createElement('a'); a.href = await fullImage(p); a.download = (p.caption || 'foto') + '.jpg'; a.click(); }

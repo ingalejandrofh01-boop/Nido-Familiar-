@@ -11,7 +11,7 @@ export function openEventForm(ev = null, presetDate = null) {
   const e = ev || { date: presetDate || selected || isoDate(), type: 'familiar', repeat: 'none', participants: S.me ? [S.me.id] : [] };
   const types = Object.entries(EVENT_TYPES).filter(([k]) => k !== 'cumple' && k !== 'intercambio');
   modal({
-    title: ev ? 'Editar evento' : 'Nuevo evento',
+    title: ev?.id ? 'Editar evento' : 'Nuevo evento',
     body: `
       <div class="field"><label>¿Qué pasa?</label><input class="input" name="title" required value="${esc(e.title || '')}" placeholder="Cena familiar, dentista, viaje…"></div>
       <div class="field"><label>Tipo</label><div class="chips">${types.map(([k, t]) => `<label class="chip chip-btn"><input type="radio" name="type" value="${k}" ${e.type === k ? 'checked' : ''} style="accent-color:${t.c}"> ${t.e} ${t.t}</label>`).join('')}</div></div>
@@ -27,15 +27,15 @@ export function openEventForm(ev = null, presetDate = null) {
       const data = { title: d.title.trim(), type: d.type || 'familiar', date: d.date, time: d.time || '', endDate: d.endDate || '', repeat: d.repeat, participants: d.participants || [], location: d.location, notes: d.notes };
       if (!data.title || !data.date) { toast('Escribe un título y fecha'); return false; }
       const isPriv = !!d.private, path = isPriv ? priv('events') : 'events';
-      if (ev && !!ev._private === isPriv) await S.db.update(path, ev.id, data);
+      if (ev?.id && !!ev._private === isPriv) await S.db.update(path, ev.id, data);
       else {
-        if (ev) await S.db.remove(ev._private ? priv('events') : 'events', ev.id);
+        if (ev?.id) await S.db.remove(ev._private ? priv('events') : 'events', ev.id);
         await S.db.add(path, { ...data, createdBy: S.me.id });
-        if (!ev && !isPriv) notify({ to: data.participants.length ? data.participants : 'all', icon: (EVENT_TYPES[data.type] || {}).e || '📅', title: `Nuevo evento: ${data.title}`, body: `${fmtDate(data.date, { weekday: true })}${data.time ? ' · ' + fmtTime(data.time) : ''}`, link: 'agenda' });
+        if (!ev?.id && !isPriv) notify({ to: data.participants.length ? data.participants : 'all', icon: (EVENT_TYPES[data.type] || {}).e || '📅', title: `Nuevo evento: ${data.title}`, body: `${fmtDate(data.date, { weekday: true })}${data.time ? ' · ' + fmtTime(data.time) : ''}`, link: 'agenda' });
       }
-      toast(ev ? '✅ Evento actualizado' : isPriv ? '🔒 Evento privado agregado' : '📅 Evento agregado');
+      toast(ev?.id ? '✅ Evento actualizado' : isPriv ? '🔒 Evento privado agregado' : '📅 Evento agregado');
     },
-    danger: ev ? { label: '🗑️ Eliminar', confirm: '¿Eliminar este evento?', action: () => S.db.remove(ev._private ? priv('events') : 'events', ev.id) } : null
+    danger: ev?.id ? { label: '🗑️ Eliminar', confirm: '¿Eliminar este evento?', action: () => S.db.remove(ev._private ? priv('events') : 'events', ev.id) } : null
   });
 }
 
@@ -64,7 +64,7 @@ export default {
     const row = (o) => {
       const T = EVENT_TYPES[o.type] || EVENT_TYPES.familiar;
       const people = (o.ev?.participants || (o.member ? [o.member.id] : [])).map(member).filter(Boolean);
-      const attrs = o.ev ? `data-act="edit" data-id="${o.ev.id}"` : o.exchange ? `onclick="location.hash='#/intercambio/${o.exchange.id}'"` : o.member ? `onclick="location.hash='#/perfil/${o.member.id}'"` : o.pet ? `onclick="location.hash='#/mascota/${o.pet.id}'"` : o.party ? `onclick="location.hash='#/fiesta/${o.party.id}'"` : o.bill ? `onclick="location.hash='#/cuenta/${o.bill.id}'"` : '';
+      const attrs = o.ev ? `data-act="edit" data-id="${o.ev.id}"` : o.exchange ? `onclick="location.hash='#/intercambio/${o.exchange.id}'"` : o.member ? `onclick="location.hash='#/perfil/${o.member.id}'"` : o.pet ? `onclick="location.hash='#/mascota/${o.pet.id}'"` : o.party ? `onclick="location.hash='#/fiesta/${o.party.id}'"` : o.bill ? `onclick="location.hash='#/cuenta/${o.bill.id}'"` : o.doc ? `onclick="location.hash='#/documentos'"` : '';
       return `<div class="item clickable" ${attrs}><span class="ev-dot" style="--c:${T.c}"></span><span class="emoji">${T.e}</span>
         <div class="grow"><div class="bold ellipsis">${o.ev?._private ? '🔒 ' : ''}${esc(o.title)}${o.years && (o.type === 'cumple' || o.type === 'aniversario') ? ` · ${o.years} ${o.type === 'cumple' ? 'años' : 'aniversario'}` : ''}</div>
         <div class="small muted">${o.time ? fmtTime(o.time) : 'Todo el día'}${o.ev?.repeat && o.ev.repeat !== 'none' ? ' · 🔁 ' + REPEATS[o.ev.repeat] : ''}${o.ev?.location ? ' · 📍 ' + esc(o.ev.location) : ''}</div></div>

@@ -152,7 +152,7 @@ export default {
     const evRow = (o) => {
       const T = EVENT_TYPES[o.type] || EVENT_TYPES.familiar;
       const people = (o.ev?.participants || (o.member ? [o.member.id] : [])).map(member).filter(Boolean);
-      const href = o.exchange ? `#/intercambio/${o.exchange.id}` : o.member ? `#/perfil/${o.member.id}` : o.pet ? `#/mascota/${o.pet.id}` : o.party ? `#/fiesta/${o.party.id}` : o.bill ? `#/cuenta/${o.bill.id}` : '';
+      const href = o.exchange ? `#/intercambio/${o.exchange.id}` : o.member ? `#/perfil/${o.member.id}` : o.pet ? `#/mascota/${o.pet.id}` : o.party ? `#/fiesta/${o.party.id}` : o.bill ? `#/cuenta/${o.bill.id}` : o.doc ? '#/documentos' : '';
       return `<div class="item ${href || o.ev ? 'clickable' : ''}" ${href ? `onclick="location.hash='${href}'"` : o.ev ? `data-act="editEvent" data-id="${o.ev.id}"` : ''}>
         <span class="emoji">${T.e}</span>
         <div class="grow"><div class="bold ellipsis">${o.ev?._private ? '🔒 ' : ''}${esc(o.title)}${o.years && o.type === 'cumple' ? ` · ${o.years} años` : ''}</div>

@@ -80,7 +80,7 @@ export function txForm(kind = 'gasto', t = null) {
   const k0 = t?.kind || kind;
   const accOpts = (sel) => S.data.accounts.map(a => `<option value="${a.id}" ${sel === a.id ? 'selected' : ''}>${ACC_TYPES[a.type]?.[0] || '💳'} ${esc(a.name)}</option>`).join('');
   modal({
-    title: t ? 'Editar movimiento' : 'Nuevo movimiento',
+    title: t?.id ? 'Editar movimiento' : 'Nuevo movimiento',
     body: `<div class="seg mb" id="kseg">${[['gasto', '💸 Gasto'], ['ingreso', '💰 Ingreso'], ['transfer', '↔️ Transferir']].map(([k, l]) => `<button type="button" data-k="${k}" class="${k0 === k ? 'on' : ''}">${l}</button>`).join('')}</div>
       <input type="hidden" name="kind" value="${k0}">
       <div class="field"><label>Monto</label><input class="input" name="amount" type="number" inputmode="decimal" step="0.01" min="0" required value="${t?.amount ?? ''}" style="font-size:28px;font-weight:900;text-align:center" placeholder="$0"></div>
@@ -117,11 +117,11 @@ export function txForm(kind = 'gasto', t = null) {
       const category = kind === 'transfer' ? '' : (d.category || '').trim() || (kind === 'ingreso' ? 'Otros ingresos' : 'Otros');
       const data = { kind, amount, note: (d.note || '').trim(), category, accountId: d.accountId, toAccountId: kind === 'transfer' ? d.toAccountId : '', date: d.date || isoDate() };
       if (kind !== 'transfer') await ensureCategory(category, kind);
-      if (t) await S.db.update(priv('txns'), t.id, data); else await S.db.add(priv('txns'), data);
+      if (t?.id) await S.db.update(priv('txns'), t.id, data); else await S.db.add(priv('txns'), data);
       toast(kind === 'gasto' ? '💸 Gasto registrado' : kind === 'ingreso' ? '💰 Ingreso registrado' : '↔️ Transferencia hecha');
       checkBudget(category, kind);
     },
-    danger: t ? { label: '🗑️', confirm: '¿Eliminar este movimiento?', action: () => S.db.remove(priv('txns'), t.id) } : null
+    danger: t?.id ? { label: '🗑️', confirm: '¿Eliminar este movimiento?', action: () => S.db.remove(priv('txns'), t.id) } : null
   });
 }
 function checkBudget(cat, kind) {

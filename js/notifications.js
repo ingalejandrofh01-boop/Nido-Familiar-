@@ -70,7 +70,7 @@ export function todayItems() {
   }
   for (const o of occurrences(t0, t0)) {
     if (o.type === 'cumple' && o.pet) { items.push({ key: `pbd-${o.pet.id}-${tIso}`, icon: '🐾', title: `¡Hoy cumple ${o.pet.name}!`, body: `${o.years ? o.years + ' año' + (o.years > 1 ? 's' : '') + ' · ' : ''}dale un premio 🎂`, link: 'mascota/' + o.pet.id }); continue; }
-    if (o.bill) continue;
+    if (o.bill || o.doc) continue;
     if (o.party) { items.push({ key: `pty-${o.party.id}-${tIso}`, icon: o.party.emoji || '🎉', title: `¡Hoy es ${o.party.title}!`, body: `${o.time ? fmtTime(o.time) + ' · ' : ''}${o.party.place || ''}`, link: 'fiesta/' + o.party.id }); continue; }
     if (o.pet) { items.push({ key: `pv-${o.pet.id}-${o.title}-${tIso}`, icon: '💉', title: `Hoy: ${o.title}`, body: 'Llévalo al veterinario', link: 'mascota/' + o.pet.id }); continue; }
     if (o.type === 'cumple') continue;
@@ -85,6 +85,12 @@ export function todayItems() {
   { const rows = agendaRows(); const mineDue = rows.filter(r => r.from === S.me.id && r.due <= tIso); const toGet = rows.filter(r => r.to === S.me.id && r.due === tIso);
     if (mineDue.length) { const tot = mineDue.reduce((a, r) => a + r.left, 0), late = mineDue.some(r => r.due < tIso); items.push({ key: `bill-pay-${tIso}-${Math.round(tot)}`, icon: late ? '⚠️' : '💸', title: late ? `Tienes pagos atrasados: ${cash(tot)}` : `Hoy te toca pagar ${cash(tot)}`, body: mineDue.slice(0, 3).map(r => r.bill.title).join(', '), link: 'cuentas' }); }
     if (toGet.length) { const tot = toGet.reduce((a, r) => a + r.left, 0); items.push({ key: `bill-get-${tIso}-${Math.round(tot)}`, icon: '💰', title: `Hoy te deben pagar ${cash(tot)}`, body: [...new Set(toGet.map(r => S.data.members.find(m => m.id === r.from)?.name))].join(', '), link: 'cuentas' }); } }
+  // 🪪 Documentos por vencer (los de la casa, los míos y mis privados)
+  for (const d of [...(S.data.docs || []).filter(x => !x.owner || x.owner === S.me.id), ...(S.data.myDocs || [])]) {
+    if (!d.expires) continue; const days = Math.round((parseDate(d.expires) - t0) / 864e5), warn = Number(d.remind ?? 30);
+    if (days > warn) continue; const stage = days < 0 ? 'late' : days === 0 ? '0' : days <= 7 ? '7' : 'r';
+    items.push({ key: `doc-${d.id}-${d.expires}-${stage}`, icon: days <= 0 ? '⚠️' : '🪪', title: days < 0 ? `Se venció: ${d.title || d.type}` : days === 0 ? `Hoy vence: ${d.title || d.type}` : `${d.title || d.type} vence en ${days} día${days === 1 ? '' : 's'}`, body: 'Toca para ver cómo renovarlo', link: 'documentos' });
+  }
   for (const p of S.data.pets || []) {
     const f = p.food; if (f && f.bagKg && f.dailyG && f.boughtAt) { const left = Math.round(f.bagKg * 1000 / f.dailyG - (t0 - parseDate(f.boughtAt)) / 864e5); if (left <= 3) items.push({ key: `pf-${p.id}-${f.boughtAt}-${left <= 0 ? 0 : 3}`, icon: '🍖', title: left <= 0 ? `¡Se acabó la comida de ${p.name}!` : `A ${p.name} le quedan ${left} día${left > 1 ? 's' : ''} de comida`, body: 'Agrégala a la lista de compras', link: 'mascota/' + p.id }); }
     const overdue = (p.vaccines || []).filter(v => v.next && v.next < tIso);

@@ -16,6 +16,8 @@ function sources() {
     ['Intercambios', S.data.exchanges.map(x => ({ t: x.title, s: fmtDate(x.date), e: '🎁', go: 'intercambio/' + x.id, k: x.title }))],
     ['Cuentas', (S.data.bills || []).map(b => ({ t: b.title, s: cash(b.total) + ' · ' + fmtDate(b.date), e: '🤝', go: 'cuenta/' + b.id, k: b.title + ' ' + (b.notes || '') }))],
     ['Metas', [...(S.data.famgoals || []), ...(S.data.goals || [])].map(g => ({ t: g.name, s: cash(g.target), e: g.emoji || '🎯', go: 'meta/' + g.id, k: g.name }))],
+    ['Documentos', [...(S.data.docs || []), ...(S.data.myDocs || [])].map(d => ({ t: d.title || d.type, s: (d.expires ? 'Vence ' + fmtDate(d.expires) : '') , e: '🪪', go: 'documentos', k: (d.title || '') + ' ' + d.type + ' ' + (d.issuer || '') + ' ' + (members().find(m => m.id === d.owner)?.name || '') }))],
+    ['Lugares', (S.data.places || []).map(p => ({ t: p.name, s: p.date ? fmtDate(p.date) : '', e: p.emoji || '📍', go: 'mapa', k: p.name + ' ' + (p.note || '') }))],
     ['Recetas', S.data.recipes.map(r => ({ t: r.title, s: r.author ? 'De ' + r.author : '', e: r.emoji || '🍲', go: 'receta/' + r.id, k: r.title + ' ' + (r.author || '') + ' ' + (r.ingredients || []).join(' ') }))],
     ['Notas', allNotes().map(n => ({ t: n.title, s: (n._private ? '🔒 ' : '') + (n.category || ''), e: '📝', go: 'notas', k: n.title + ' ' + (n.hidden ? '' : n.body || '') }))],
     ['¿Dónde está?', S.data.inventory.map(i => ({ t: i.name || i.title, s: i.place || i.location || '', e: '🔎', go: 'donde', k: (i.name || i.title || '') + ' ' + (i.place || i.location || '') }))],
@@ -26,7 +28,7 @@ function sources() {
     ['Chat', S.data.messages.filter(m => m.text).slice(-150).map(m => ({ t: m.text, s: members().find(x => x.id === m.author)?.name || '', e: '💬', go: 'chat', k: m.text }))]
   ];
 }
-const SECTIONS = [['Cuentas claras', 'cuentas', '🤝'], ['Metas', 'metas', '🎯'], ['Menú semanal', 'menu', '🍽️'], ['Ruleta', 'ruleta', '🎡'], ['Resumen del año', 'resumen', '🎁'], ['Ajustes', 'ajustes', '⚙️'], ['Familia', 'familia', '👨‍👩‍👧'], ['Árbol genealógico', 'arbol', '🌳'], ['Mascotas', 'mascotas', '🐾'], ['Fiestas', 'fiestas', '🎉'], ['Dinero', 'dinero', '💰'], ['Recetario', 'recetas', '🍲'], ['Retos', 'retos', '🏅'], ['Cápsula del tiempo', 'capsula', '⏳'], ['Encuestas', 'encuestas', '🗳️'], ['Viajes', 'viajes', '✈️'], ['¿Dónde andamos?', 'ubicacion', '📍'], ['Libro familiar', 'fotos', '📖'], ['Compras', 'listas', '🛒'], ['Tareas', 'tareas', '🧹'], ['Notas', 'notas', '📝'], ['Chat', 'chat', '💬'], ['Agenda', 'agenda', '📅'], ['Intercambios', 'intercambios', '🎁']];
+const SECTIONS = [['Mapa de recuerdos', 'mapa', '🗺️'], ['Búsqueda del tesoro', 'tesoro', '🏴‍☠️'], ['Documentos', 'documentos', '🪪'], ['Cuentas claras', 'cuentas', '🤝'], ['Metas', 'metas', '🎯'], ['Menú semanal', 'menu', '🍽️'], ['Ruleta', 'ruleta', '🎡'], ['Resumen del año', 'resumen', '🎁'], ['Ajustes', 'ajustes', '⚙️'], ['Familia', 'familia', '👨‍👩‍👧'], ['Árbol genealógico', 'arbol', '🌳'], ['Mascotas', 'mascotas', '🐾'], ['Fiestas', 'fiestas', '🎉'], ['Dinero', 'dinero', '💰'], ['Recetario', 'recetas', '🍲'], ['Retos', 'retos', '🏅'], ['Cápsula del tiempo', 'capsula', '⏳'], ['Encuestas', 'encuestas', '🗳️'], ['Viajes', 'viajes', '✈️'], ['¿Dónde andamos?', 'ubicacion', '📍'], ['Libro familiar', 'fotos', '📖'], ['Compras', 'listas', '🛒'], ['Tareas', 'tareas', '🧹'], ['Notas', 'notas', '📝'], ['Chat', 'chat', '💬'], ['Agenda', 'agenda', '📅'], ['Intercambios', 'intercambios', '🎁']];
 
 export function openSearch() {
   if (document.querySelector('.search-ov')) return;

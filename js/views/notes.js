@@ -6,9 +6,9 @@ const NCATS = { Casa: '🏠', Auto: '🚗', Viaje: '✈️', Salud: '🩺', Escu
 let ncat = 'Todas';
 const shown = new Set();
 
-function noteForm(n = null) {
+export function noteForm(n = null) {
   modal({
-    title: n ? 'Editar nota' : 'Nueva nota',
+    title: n?.id ? 'Editar nota' : 'Nueva nota',
     body: `<div class="field"><label>Título</label><input class="input" name="title" required value="${esc(n?.title || '')}" placeholder="Wi-Fi, plomero, seguro del auto…"></div>
       <div class="field"><label>Categoría</label><div class="chips">${Object.entries(NCATS).map(([k, e]) => `<label class="chip chip-btn"><input type="radio" name="category" value="${k}" ${(n?.category || 'Casa') === k ? 'checked' : ''}> ${e} ${k}</label>`).join('')}</div></div>
       <div class="field"><label>Contenido</label><textarea class="input" name="body" rows="6">${esc(n?.body || '')}</textarea></div>
@@ -18,10 +18,10 @@ function noteForm(n = null) {
       const data = { title: d.title.trim(), category: d.category || 'Otros', body: d.body, secret: !!d.secret, by: S.me.id };
       if (!data.title) return false;
       const isPriv = !!d.private, path = isPriv ? priv('notes') : 'notes';
-      if (n && !!n._private === isPriv) await S.db.update(path, n.id, data);
-      else { if (n) await S.db.remove(n._private ? priv('notes') : 'notes', n.id); await S.db.add(path, data); }
+      if (n?.id && !!n._private === isPriv) await S.db.update(path, n.id, data);
+      else { if (n?.id) await S.db.remove(n._private ? priv('notes') : 'notes', n.id); await S.db.add(path, data); }
     },
-    danger: n ? { label: '🗑️', confirm: '¿Eliminar nota?', action: () => S.db.remove(n._private ? priv('notes') : 'notes', n.id) } : null
+    danger: n?.id ? { label: '🗑️', confirm: '¿Eliminar nota?', action: () => S.db.remove(n._private ? priv('notes') : 'notes', n.id) } : null
   });
 }
 

@@ -4,8 +4,8 @@ import { toast, isoDate, esc } from './ui.js';
 
 // Colecciones que se respaldan (las mismas que ve la app)
 export const BACKUP_COLS = ['members', 'events', 'exchanges', 'albums', 'photos', 'shopping', 'chores', 'expenses', 'messages', 'notes', 'inventory', 'backgrounds', 'rewards',
-  'recipes', 'capsules', 'polls', 'trips', 'challenges', 'pets', 'parties', 'wheels', 'spins', 'menus', 'bills', 'famgoals'];
-const PRIVATE_COLS = ['events', 'notes', 'accounts', 'txns', 'categories', 'budgets', 'goals'];
+  'recipes', 'capsules', 'polls', 'trips', 'challenges', 'pets', 'parties', 'wheels', 'spins', 'menus', 'bills', 'famgoals', 'docs', 'hunts', 'places'];
+const PRIVATE_COLS = ['events', 'notes', 'accounts', 'txns', 'categories', 'budgets', 'goals', 'docs'];
 
 // ---------------- ZIP (sin librerías) ----------------
 const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();

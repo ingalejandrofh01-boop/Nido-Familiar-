@@ -68,6 +68,11 @@ Para no requerir el plan de pago de Firebase Storage, las fotos se **comprimen e
 | 🎯 Metas | Corto, mediano y largo plazo (carro, casa, enganche, viaje, fondo de emergencia…), familiares o privadas; cuánto apartar por quincena y por persona, fecha estimada según el ritmo, hitos 25/50/75/100 % con festejo, aportaciones y retiros |
 | 🎁 Resumen del año | Historias animadas tipo Wrapped: fotos, momentos, total gastado, **mes más caro**, **compra más cara**, categorías, quién pagó más, cuentas claras, tus finanzas (privado), cocina, tareas, mascotas, chat y emojis, ruleta, metas y premios de la familia |
 | ✨ Experiencia | Inicio que cambia según la hora (y se personaliza), botón ＋ para agregar cualquier cosa, buscador global (Ctrl+K), gestos (deslizar para completar/borrar, jalar para actualizar, visor de fotos, atrás desde la orilla), animaciones, números que cuentan, íconos propios por temporada, pantalla de carga animada, bienvenida guiada, sonidos y vibración |
+| 🧾 Escáner de tickets | Foto del ticket → se lee en el propio teléfono (tienda, fecha, total y artículos) → gasto familiar, cuenta dividida o gasto personal; también palomea lo comprado en la lista del súper |
+| 🎙️ Agregar por voz | “leche, huevos y tortillas”, “gasté 350 en gasolina”, “me pagaron 5000”, “recuérdame el dentista mañana a las 5”, “nota: …”; si el navegador no tiene micrófono, se dicta con el 🎤 del teclado |
+| 🪪 Documentos | INE, pasaportes, licencias, pólizas, verificación, tenencia, garantías… con foto, número oculto, avisos antes de vencer, renovaciones y privados |
+| 🗺️ Mapa de recuerdos | Lugares con sus fotos, capítulos y viajes; buscar lugar, “estoy aquí” o la ubicación guardada en la foto |
+| 🏴‍☠️ Búsqueda del tesoro | Acertijos en orden y códigos QR imprimibles para esconder en casa; se escanean con la app (o se escribe el código), marcador y premio final |
 | 💾 Respaldo | En Ajustes: descarga un .zip con las fotos por capítulo, las recetas en texto y todos los datos; el administrador puede restaurarlo |
 | 💌 Amigo secreto | Mensajes anónimos: el que regala pregunta pistas sin revelar quién es |
 | 🍲 Recetario | Recetas con foto y autor, modo cocina paso a paso (pantalla encendida), favoritas, ingredientes directo a la lista de compras |

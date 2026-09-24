@@ -72,15 +72,24 @@ function petForm(p = {}) {
   const isNew = !p.id;
   let draft = { type: p.type || 'gato', avatar: p.avatar ? { ...p.avatar } : { ...defaultAvatar('gato'), fur: '#ec7a32', pattern: 'rayas', neck: 'collar', eyeColor: '#d4a017', bg: BG_COLORS[3] }, photo: p.photo || '', avatarMode: p.avatarMode || 'avatar' };
   const sw = (name, list, cur) => `<div class="swatches">${list.map(c => `<button type="button" class="swatch ${c === cur ? 'on' : ''}" data-sw="${name}" data-v="${c}" style="background:${c}"></button>`).join('')}</div>`;
-  const body = () => `
-    <div class="pet-prev">${petAvatar({ ...p, ...draft, name: 'preview' }, 'xl live')}</div>
+  const body = () => {
+    const sp = PET_TYPES[draft.type][2], usePhoto = draft.avatarMode === 'photo' || !sp;
+    return `
+    <div class="pet-photo-pick">
+      <button type="button" class="pet-prev-btn" data-photo aria-label="Subir foto">${petAvatar({ ...p, ...draft, name: 'preview' }, 'xl live')}<span class="pp-cam">📷</span></button>
+      <div class="col" style="gap:8px;align-items:flex-start">
+        <button type="button" class="btn primary" data-photo>📷 ${draft.photo ? 'Cambiar la foto' : 'Subir su foto'}</button>
+        ${sp ? `<div class="seg"><button type="button" class="${usePhoto && draft.photo ? 'on' : ''}" data-mode="photo" ${draft.photo ? '' : 'disabled'}>📷 Foto</button><button type="button" class="${!usePhoto || !draft.photo ? 'on' : ''}" data-mode="avatar">🐾 Avatar</button></div>` : ''}
+        ${draft.photo ? '<button type="button" class="link tiny" data-nophoto>Quitar foto</button>' : '<span class="tiny muted">Se ve en su perfil, en Inicio y en la agenda</span>'}
+      </div></div>
     <div class="field"><label>¿Qué es?</label><div class="chips">${Object.entries(PET_TYPES).map(([k, [e, l]]) => `<button type="button" class="chip chip-btn ${draft.type === k ? 'accent' : ''}" data-type="${k}">${e} ${l}</button>`).join('')}</div></div>
-    ${PET_TYPES[draft.type][2] ? `<div class="field"><label>Color de pelaje</label>${sw('fur', FUR_COLORS, draft.avatar.fur)}</div>
+    ${sp && !(usePhoto && draft.photo) ? `<details class="pet-av-opts" ${draft.photo ? '' : 'open'}><summary class="bold small">🎨 Personalizar el avatar</summary><div class="mt-s">
+      <div class="field"><label>Color de pelaje</label>${sw('fur', FUR_COLORS, draft.avatar.fur)}</div>
       <div class="field"><label>Panza y detalles</label>${sw('sec', SEC_COLORS, draft.avatar.sec)}</div>
       <div class="frow"><div class="field"><label>Marcas</label><select class="input" data-av="pattern">${[['ninguno', 'Liso'], ['rayas', 'Atigrado'], ['manchas', 'Manchas'], ['parche', 'Parche'], ['antifaz', 'Antifaz'], ['frente', 'Estrella en la frente'], ['vaca', 'Manchas grandes']].map(([k, l]) => `<option value="${k}" ${draft.avatar.pattern === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div>
         <div class="field"><label>En el cuello</label><select class="input" data-av="neck">${[['ninguno', 'Nada'], ['collar', 'Collar con placa'], ['paliacate', 'Paliacate'], ['corbatin', 'Moñito'], ['bufanda', 'Bufanda']].map(([k, l]) => `<option value="${k}" ${draft.avatar.neck === k ? 'selected' : ''}>${l}</option>`).join('')}</select></div></div>
-      <div class="field"><label>Color del collar</label>${sw('acc', ACC_COLORS, draft.avatar.acc)}</div>` : ''}
-    <div class="row wrap" style="gap:8px;margin-bottom:12px"><button type="button" class="btn sm" data-photo>📷 ${draft.photo ? 'Cambiar foto' : 'Subir foto real'}</button>${draft.photo ? `<label class="chip chip-btn"><input type="checkbox" data-usephoto ${draft.avatarMode === 'photo' ? 'checked' : ''}> Usar la foto como avatar</label>` : ''}</div>`;
+      <div class="field"><label>Color del collar</label>${sw('acc', ACC_COLORS, draft.avatar.acc)}</div></div></details>` : ''}`;
+  };
   const m = modal({
     title: isNew ? '🐾 Nueva mascota' : `✏️ ${esc(p.name)}`, wide: true,
     body: `<div data-live>${body()}</div>
@@ -102,15 +111,16 @@ function petForm(p = {}) {
         });
         live.querySelectorAll('[data-sw]').forEach(b => b.onclick = () => { draft.avatar[b.dataset.sw] = b.dataset.v; repaint(); });
         live.querySelectorAll('[data-av]').forEach(s => s.onchange = () => { draft.avatar[s.dataset.av] = s.value; repaint(); });
-        const ph = live.querySelector('[data-photo]'); if (ph) ph.onclick = async () => { const [file] = await pickFiles(); if (!file) return; draft.photo = await compressImage(file, 600, .82, 140000); draft.avatarMode = 'photo'; repaint(); };
-        const up = live.querySelector('[data-usephoto]'); if (up) up.onchange = () => { draft.avatarMode = up.checked ? 'photo' : 'avatar'; repaint(); };
+        live.querySelectorAll('[data-photo]').forEach(ph => ph.onclick = async () => { const [file] = await pickFiles(); if (!file) return; draft.photo = await compressImage(file, 800, .85, 220000); draft.avatarMode = 'photo'; repaint(); });
+        live.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { draft.avatarMode = b.dataset.mode; repaint(); });
+        const np = live.querySelector('[data-nophoto]'); if (np) np.onclick = () => { draft.photo = ''; draft.avatarMode = 'avatar'; repaint(); };
       };
       bind();
     },
     submit: async d => {
       if (!d.name.trim()) { toast('Ponle nombre 🐾'); return false; }
       const sp = PET_TYPES[draft.type][2];
-      const data = { name: d.name.trim(), breed: d.breed, birthday: d.birthday, sex: d.sex, likes: d.likes, dislikes: d.dislikes, chip: d.chip, neutered: d.neutered, notes: d.notes, type: draft.type, avatar: sp ? draft.avatar : null, photo: draft.photo, avatarMode: sp ? draft.avatarMode : (draft.photo ? 'photo' : 'avatar') };
+      const data = { name: d.name.trim(), breed: d.breed, birthday: d.birthday, sex: d.sex, likes: d.likes, dislikes: d.dislikes, chip: d.chip, neutered: d.neutered, notes: d.notes, type: draft.type, avatar: sp ? draft.avatar : null, photo: draft.photo, avatarMode: draft.photo && (draft.avatarMode === 'photo' || !sp) ? 'photo' : 'avatar' };
       if (isNew) {
         const tpl = ROUTINE_TPL[draft.type] || ROUTINE_TPL.default;
         const id = await S.db.add('pets', { ...data, routines: tpl.map(([emoji, title, times]) => ({ id: rid(), emoji, title, times, who: [] })), vaccines: [], weightLog: [], log: {}, vet: {}, food: {}, by: S.me.id });
@@ -171,7 +181,7 @@ export const petDetail = {
     const b = p.birthday ? parseDate(p.birthday) : null; const bdToday = b && b.getMonth() === t0.getMonth() && b.getDate() === t0.getDate();
     return `<a class="link" href="#/mascotas">‹ Mascotas</a>
       <section class="card xhero deco mt pet-hero">
-        <div class="row wrap" style="gap:18px">${petAvatar(p, 'xxl live')}
+        <div class="row wrap" style="gap:18px"><button class="pet-hero-av" data-act="petPhoto" data-id="${p.id}" aria-label="Cambiar foto">${petAvatar(p, 'xxl live')}<span class="pp-cam">📷</span></button>
           <div class="grow"><div class="row between wrap"><div class="xhero-title">${esc(p.name)}${bdToday ? ' 🎂' : ''}</div><button class="btn sm" data-act="editPet" data-id="${p.id}">✏️ Editar</button></div>
             <div class="bold muted">${PET_TYPES[p.type]?.[0] || '🐾'} ${esc(p.breed || PET_TYPES[p.type]?.[1] || '')}${p.sex ? ` · ${p.sex === 'm' ? '♂ Macho' : '♀ Hembra'}` : ''}${petAge(p) ? ` · ${petAge(p)}` : ''}</div>
             ${bdToday ? `<div class="chip accent mt-s">🎉 ¡Hoy es su cumpleaños! Dale un premio</div>` : ''}
@@ -206,6 +216,7 @@ export const petDetail = {
   theme() { return null; },
   actions: {
     editPet(el) { petForm(pet(el.dataset.id)); },
+    async petPhoto(el) { const p = pet(el.dataset.id); const [file] = await pickFiles(); if (!file) return; const photo = await compressImage(file, 800, .85, 220000); await S.db.update('pets', p.id, { photo, avatarMode: 'photo' }); toast(`📷 ¡Qué guapo${p.sex === 'h' ? 'a' : ''} ${p.name}!`); },
     care(el) { const p = pet(el.dataset.pet); const r = (p?.routines || []).find(x => x.id === el.dataset.r); if (p && r) logCare(p, r); },
     routines(el) {
       const p = pet(el.dataset.id); let rs = (p.routines || []).map(r => ({ ...r, who: [...(r.who || [])] }));

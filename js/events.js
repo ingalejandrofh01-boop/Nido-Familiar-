@@ -57,6 +57,8 @@ export function occurrences(from, to) {
   for (const p of S.data.parties || []) { const d = parseDate(p.date); if (d) add(d, { title: p.title, type: 'fiesta', party: p, virtual: true, time: p.time }); }
   // 🤝 Pagos pendientes de Cuentas claras (sólo los míos: lo que pago o me pagan)
   if (S.me) for (const r of agendaRows()) { const d = parseDate(r.due); const other = S.data.members.find(m => m.id === (r.from === S.me.id ? r.to : r.from)); add(d, { title: r.from === S.me.id ? `💸 Pagar ${cash(r.left)} a ${other?.name || '?'} · ${r.bill.title}` : `💰 ${other?.name || '?'} te paga ${cash(r.left)} · ${r.bill.title}`, type: 'recordatorio', bill: r.bill, people: [r.from, r.to], virtual: true }); }
+  // 🪪 Vencimientos de documentos
+  for (const d of [...(S.data.docs || []), ...(S.data.myDocs || [])]) { const dd = parseDate(d.expires); if (!dd) continue; const o = S.data.members.find(m => m.id === d.owner); add(dd, { title: `🪪 Vence: ${d.title || d.type}${o ? ' de ' + o.name.split(' ')[0] : ''}`, type: 'recordatorio', doc: d, virtual: true }); }
   for (const x of S.data.exchanges) {
     const d = parseDate(x.date); if (d) add(d, { title: x.title, type: 'intercambio', exchange: x, virtual: true, time: x.time });
   }

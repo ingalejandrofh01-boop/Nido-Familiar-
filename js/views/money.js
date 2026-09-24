@@ -11,9 +11,9 @@ export const CATS = {
 };
 let ym = null;
 
-function expenseForm(e = null) {
+export function expenseForm(e = null) {
   modal({
-    title: e ? 'Editar gasto' : 'Nuevo gasto',
+    title: e?.id ? 'Editar gasto' : 'Nuevo gasto',
     body: `<div class="frow"><div class="field"><label>Concepto</label><input class="input" name="title" required value="${esc(e?.title || '')}" placeholder="Súper, gasolina, luz…"></div>
       <div class="field"><label>Monto ($)</label><input class="input" type="number" step="0.01" min="0" name="amount" required value="${e?.amount ?? ''}"></div></div>
       <div class="field"><label>Categoría</label><div class="chips">${Object.entries(CATS).map(([k, [em, n]]) => `<label class="chip chip-btn"><input type="radio" name="category" value="${k}" ${(e?.category || 'super') === k ? 'checked' : ''}> ${em} ${n}</label>`).join('')}</div></div>
@@ -23,9 +23,9 @@ function expenseForm(e = null) {
     submit: async d => {
       const data = { title: d.title.trim(), amount: Number(d.amount) || 0, category: d.category || 'otros', paidBy: d.paidBy, date: d.date, split: d.split || [] };
       if (!data.title || !data.amount) { toast('Escribe concepto y monto'); return false; }
-      if (e) await S.db.update('expenses', e.id, data); else await S.db.add('expenses', data);
+      if (e?.id) await S.db.update('expenses', e.id, data); else await S.db.add('expenses', data);
     },
-    danger: e ? { label: '🗑️', confirm: '¿Eliminar gasto?', action: () => S.db.remove('expenses', e.id) } : null
+    danger: e?.id ? { label: '🗑️', confirm: '¿Eliminar gasto?', action: () => S.db.remove('expenses', e.id) } : null
   });
 }
 
@@ -55,7 +55,7 @@ export default {
     if (!mtab) mtab = 'personal';
     if (!isAdult()) mtab = 'personal';
     const tabs = `<div class="page-head"><div><h1>Dinero</h1><p>${mtab === 'personal' ? 'Tus finanzas personales, privadas sólo para ti' : 'Gastos compartidos, presupuesto y cuentas claras'}</p></div>
-      ${mtab === 'familia' ? '<button class="btn primary" data-act="new">＋ Gasto familiar</button>' : ''}</div>
+      <div class="row" style="gap:8px"><button class="btn" data-act="scanTicket">🧾 Ticket</button>${mtab === 'familia' ? '<button class="btn primary" data-act="new">＋ Gasto familiar</button>' : ''}</div></div>
       <div class="seg mb"><button class="${mtab === 'personal' ? 'on' : ''}" data-act="mtab" data-t="personal">🙋 Mis finanzas</button>${isAdult() ? `<button class="${mtab === 'familia' ? 'on' : ''}" data-act="mtab" data-t="familia">👨‍👩‍👧 Familiar</button>` : ''}</div>`;
     const promo = `<a class="card deco mb cc-promo" href="#/cuentas"><span style="font-size:34px">🤝</span><div class="grow"><div class="bold">Cuentas claras</div><div class="small muted bold">Divide renta, súper o préstamos, págalos por quincena y lleva los abonos</div></div><span class="btn sm primary">Abrir</span></a>`;
     if (mtab === 'personal') return tabs + promo + renderMyFinance();
@@ -92,6 +92,7 @@ export default {
   },
   actions: {
     ...financeActions,
+    async scanTicket() { (await import('../scanner.js')).openScanner(); },
     mtab(el) { mtab = el.dataset.t; hooks.rerender(); },
     new() { expenseForm(); },
     edit(el) { expenseForm(S.data.expenses.find(e => e.id === el.dataset.id)); },

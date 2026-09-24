@@ -280,6 +280,32 @@ export function seedDemo() {
             contribs: [c('m1', 4000, 80), c('m3', 4000, 12)] }
         };
       })(),
+      docs: {
+        d1: { type: 'ine', title: 'INE', owner: 'm1', number: 'FRHRAL95030809H700', issuer: 'INE', issued: iso(plus(-3620)), expires: iso(plus(20)), remind: 30, notes: 'El original está en el cajón del escritorio', front: '', back: '', history: [] },
+        d2: { type: 'pasaporte', title: 'Pasaporte', owner: 'm2', number: 'G12345678', issuer: 'SRE', issued: iso(plus(-2200)), expires: iso(plus(-15)), remind: 60, notes: 'Cita en la SRE por internet', front: '', back: '', history: [] },
+        d3: { type: 'seguro_auto', title: 'Seguro del Versa', owner: '', number: 'POL-778812', issuer: 'Qualitas', issued: iso(plus(-300)), expires: iso(plus(65)), remind: 30, cost: 8900, notes: 'Agente: Lic. Ramírez 55 1234 5678 · Siniestros 800 800 2880', front: '', back: '', history: [] },
+        d4: { type: 'verificacion', title: 'Verificación del Versa', owner: '', number: '', issuer: 'Verificentro', issued: iso(plus(-170)), expires: iso(plus(12)), remind: 15, cost: 650, notes: 'Holograma 0 · engomado rosa', front: '', back: '', history: [] },
+        d5: { type: 'garantia', title: 'Garantía del refrigerador', owner: '', number: 'SN 88AF1290', issuer: 'Liverpool', issued: iso(plus(-200)), expires: iso(plus(530)), remind: 30, notes: 'Ticket guardado en la carpeta azul', front: '', back: '', history: [] },
+        d6: { type: 'licencia', title: 'Licencia de manejo', owner: 'm3', number: 'A0912345', issuer: 'SEMOVI CDMX', issued: iso(plus(-400)), expires: iso(plus(700)), remind: 30, front: '', back: '', history: [] },
+        d7: { type: 'acta', title: 'Acta de nacimiento', owner: 'm5', number: '', issuer: 'Registro Civil', issued: '', expires: '', remind: 30, notes: 'Copia certificada en el folder de la escuela', front: '', back: '', history: [] }
+      },
+      'private/demo-user/docs': { pd1: { type: 'membresia', title: 'Gimnasio', owner: 'm1', number: 'SOC-4412', issuer: 'Smart Fit', expires: iso(plus(40)), remind: 7, cost: 499, front: '', back: '', history: [] } },
+      hunts: {
+        h1: { title: 'El tesoro del Capitán Cheto', theme: 'piratas', prize: 'Una bolsa de chocolates escondida en el horno 🍫', status: 'live', startedAt: now - 1800000, players: ['m4', 'm5'], by: 'm1',
+          clues: [
+            { id: 'c1', code: 'PIR01', riddle: 'Donde el frío guarda la leche y el queso, busca tu primer secreto 🧊', hint: 'Está en la cocina', spot: 'Pegado dentro del refri' },
+            { id: 'c2', code: 'LUNA2', riddle: 'Tengo teclas pero no abro puertas, y en las noches me prendes para ver películas 📺', hint: 'En la sala', spot: 'Atrás del control de la tele' },
+            { id: 'c3', code: 'GATO3', riddle: 'Donde Cheto duerme la siesta y deja sus pelos naranjas 🐱', hint: 'Su camita', spot: 'Bajo la cama de Cheto' },
+            { id: 'c4', code: 'ORO44', riddle: 'Caliente, caliente… donde se hornean los pasteles de la abuela 🎂', hint: 'Cocina otra vez', spot: 'El premio: dentro del horno (apagado)' }
+          ],
+          progress: { m5: { step: 2, times: [now - 1500000, now - 900000], hints: 1, hintsFor: [1], start: now - 1800000 }, m4: { step: 1, times: [now - 1200000], hints: 0, start: now - 1800000 } } }
+      },
+      places: {
+        pl1: { name: 'Vacaciones en Acapulco', lat: 16.8531, lng: -99.8237, date: `${y}-07-15`, emoji: '🏖️', albumId: 'a2', tripId: '', note: 'El atardecer desde la Quebrada 🌅', by: 'm2' },
+        pl2: { name: 'Casa de la abuela Rosa', lat: 19.2882, lng: -99.1667, date: `${y - 1}-12-24`, emoji: '🏡', albumId: 'a1', tripId: '', note: 'Todas las Navidades aquí 🎄', by: 'm1' },
+        pl3: { name: 'Valle de Bravo', lat: 19.1925, lng: -100.1310, date: iso(plus(10)), emoji: '⛵', albumId: '', tripId: 'v1', note: 'Paseo en lancha y parapente', by: 'm3' },
+        pl4: { name: 'Fiesta de Luis en el jardín', lat: 19.3467, lng: -99.1617, date: `${y}-${md(plus(19))}`, emoji: '🎉', albumId: 'a3', tripId: '', note: '', by: 'm2' }
+      },
       rewards: {
         r1: { title: 'Elegir la película del viernes', cost: 50, emoji: '🎬' },
         r2: { title: '30 min extra de videojuegos', cost: 80, emoji: '🎮' },

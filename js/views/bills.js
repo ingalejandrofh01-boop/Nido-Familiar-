@@ -13,13 +13,13 @@ const STATUS = { pagado: ['✅', 'Pagado'], parcial: ['🟡', 'Parcial'], pendie
 const catE = (b) => (BILL_CATS[b.category] || BILL_CATS.otro)[0];
 
 // ---------------- Formulario de cuenta ----------------
-function billForm(b = null) {
-  const ppl0 = b ? Object.keys(b.shares || {}) : members().filter(m => ['admin', 'adulto'].includes(m.role)).map(m => m.id);
+export function billForm(b = null) {
+  const ppl0 = b?.id ? Object.keys(b.shares || {}) : members().filter(m => ['admin', 'adulto'].includes(m.role)).map(m => m.id);
   const st = { mode: b?.split || 'igual', people: new Set(ppl0.length ? ppl0 : members().map(m => m.id)), inputs: { ...(b?.inputs || {}) }, freq: b?.plan?.freq || 'unico' };
   const defStart = isoDate(payday(today0()) < today0() ? today0() : payday(today0()));
   let getShares = () => ({});
   modal({
-    title: b ? '✏️ Editar cuenta' : '🤝 Nueva cuenta dividida', wide: true,
+    title: b?.id ? '✏️ Editar cuenta' : '🤝 Nueva cuenta dividida', wide: true,
     body: `<div class="field"><label>¿De qué es?</label><div class="chips">${Object.entries(BILL_CATS).map(([k, [e, l]]) => `<label class="chip chip-btn"><input type="radio" name="category" value="${k}" ${(b?.category || 'renta') === k ? 'checked' : ''}> ${e} ${l}</label>`).join('')}</div></div>
       <div class="frow"><div class="field"><label>Concepto</label><input class="input" name="title" required value="${esc(b?.title || '')}" placeholder="Renta de octubre, súper de la semana, préstamo…"></div><div class="field" style="max-width:160px"><label>Total $</label><input class="input" name="total" type="number" inputmode="decimal" step="0.01" min="0" required value="${b?.total || ''}"></div></div>
       <div class="frow"><div class="field"><label>¿A quién se le paga? (quien puso o junta el dinero)</label><select class="input" name="to">${members().map(x => `<option value="${x.id}" ${(b?.to || S.me.id) === x.id ? 'selected' : ''}>${esc(x.name)}</option>`).join('')}</select></div><div class="field" style="max-width:170px"><label>Fecha</label><input class="input" type="date" name="date" value="${b?.date || isoDate()}"></div></div>
@@ -31,11 +31,11 @@ function billForm(b = null) {
       <div class="plan-prev small bold" data-prev></div>
       <div class="row wrap mt" style="gap:8px"><label class="chip chip-btn"><input type="checkbox" name="monthly" ${b?.recurring?.monthly ? 'checked' : ''}> 🔁 Se repite cada mes (renta, internet, colegiatura…)</label></div>
       <div class="field mt"><label>Notas</label><input class="input" name="notes" value="${esc(b?.notes || '')}" placeholder="CLABE, número de referencia, lo que acordaron…"></div>`,
-    danger: b ? { label: 'Borrar', confirm: '¿Borrar esta cuenta y todos sus abonos?', action: async () => {
+    danger: b?.id ? { label: 'Borrar', confirm: '¿Borrar esta cuenta y todos sus abonos?', action: async () => {
       if (b.recurring?.parentId) { const tpl = bill(b.recurring.parentId); if (tpl) await S.db.update('bills', tpl.id, { 'recurring.skip': [...(tpl.recurring.skip || []), b.date.slice(0, 7)] }); }
       await S.db.remove('bills', b.id); hooks.go('cuentas');
     } } : undefined,
-    submitLabel: b ? 'Guardar' : '🤝 Crear cuenta',
+    submitLabel: b?.id ? 'Guardar' : '🤝 Crear cuenta',
     onOpen(f) {
       const total = () => r2(f.querySelector('[name=total]').value);
       const people = () => members().filter(x => st.people.has(x.id));
@@ -71,7 +71,7 @@ function billForm(b = null) {
       const data = { title: d.title.trim(), category: d.category || 'otro', total, date: d.date || isoDate(), to: d.to, split: st.mode, inputs: st.mode === 'igual' ? {} : Object.fromEntries([...st.people].map(id => [id, st.inputs[id] ?? ''])), shares,
         plan: { freq: st.freq, n: st.freq === 'unico' ? 1 : Math.max(1, Number(d.n) || 1), start: st.freq === 'unico' ? (d.date || isoDate()) : (d.start || isoDate()) }, notes: d.notes || '' };
       if (!b?.recurring?.parentId) data.recurring = d.monthly ? { monthly: true, skip: b?.recurring?.skip || [] } : null;
-      if (b) { await S.db.update('bills', b.id, data); toast('✅ Cuenta actualizada'); return; }
+      if (b?.id) { await S.db.update('bills', b.id, data); toast('✅ Cuenta actualizada'); return; }
       const id = await S.db.add('bills', { ...data, payments: [], by: S.me.id });
       const tmp = { ...data, id, payments: [] };
       for (const mid of debtors(tmp)) notify({ to: [mid], icon: catE(tmp), title: `Nueva cuenta: ${data.title}`, body: `Te toca ${cash(shares[mid])}${data.plan.n > 1 ? ` en ${planLabel(data.plan)}` : ''} · se le paga a ${personName(data.to)}`, link: 'cuenta/' + id });
@@ -162,7 +162,7 @@ export const billsView = {
     else body = `<div class="row mt" style="gap:8px"><button class="chip chip-btn ${!showDone ? 'sel' : ''}" data-act="done" data-v="0">Activas (${act.length})</button><button class="chip chip-btn ${showDone ? 'sel' : ''}" data-act="done" data-v="1">Liquidadas (${done.length})</button></div>
       <div class="grid g2 mt">${(showDone ? done : act).map(b => { const s = billStatus(b); return `<a class="card deco bill-card" href="#/cuenta/${b.id}"><div class="row"><span class="bill-e">${catE(b)}</span><div class="grow" style="min-width:0"><div class="bold ellipsis">${esc(b.title)}</div><div class="tiny muted">${cash(b.total)} · se le paga a ${esc(personName(b.to))} · ${planLabel(b.plan)}${b.recurring?.monthly ? ' · 🔁' : ''}</div></div></div>
         <div class="progress mt" style="height:8px"><i style="width:${s.pct * 100}%;${s.done ? 'background:#1baf7a' : ''}"></i></div><div class="row between tiny bold mt-s"><span>${s.done ? '✅ Liquidada' : `Faltan ${cash(s.remaining)}`}</span><span class="${s.overdue ? 'bad' : 'muted'}">${s.overdue ? `⚠️ ${cash(s.overdue)} vencido` : `${cash(s.paid)} de ${cash(s.owed)}`}</span></div></a>`; }).join('') || `<div class="card empty"><div class="big">🧾</div><p class="bold">${showDone ? 'Aún no hay cuentas liquidadas' : 'Sin cuentas activas'}</p></div>`}</div>`;
-    return `<div class="page-head"><div><h1>Cuentas claras</h1><p>Dividir, abonar y saber cuánto toca cada quincena 🤝</p></div><button class="btn primary" data-act="newBill">＋ Nueva cuenta</button></div>
+    return `<div class="page-head"><div><h1>Cuentas claras</h1><p>Dividir, abonar y saber cuánto toca cada quincena 🤝</p></div><div class="row" style="gap:8px"><button class="btn" data-act="scanTicket">🧾 Ticket</button><button class="btn primary" data-act="newBill">＋ Nueva cuenta</button></div></div>
       <div class="grid g4 debt-stats">${stat(`Pagas esta quincena`, r2(T.pay.now + T.pay.overdue), T.pay.overdue ? `⚠️ ${cash(T.pay.overdue)} vencido` : qLabel(q0), T.pay.overdue ? 'warn' : '')}${stat('Te pagan esta quincena', r2(T.get.now + T.get.overdue), T.get.overdue ? `⚠️ ${cash(T.get.overdue)} atrasado` : qLabel(q0))}${stat('Próxima quincena', T.pay.next, `pagas · te pagan ${cash(T.get.next)}`)}${stat('Saldo total', r2(T.get.total - T.pay.total), `debes ${cash(T.pay.total)} · te deben ${cash(T.get.total)}`, T.get.total - T.pay.total < 0 ? 'neg' : 'pos')}</div>
       <div class="row wrap mt" style="gap:8px;justify-content:space-between"><div class="seg">${[['agenda', '📅 Agenda'], ['personas', '👥 Por persona'], ['cuentas', '🧾 Cuentas']].map(([k, l]) => `<button class="${tab === k ? 'on' : ''}" data-act="tab" data-t="${k}">${l}</button>`).join('')}</div>
         ${tab !== 'cuentas' ? `<label class="chip chip-btn"><input type="checkbox" data-change="scope" ${scopeAll ? 'checked' : ''}> 👨‍👩‍👧 Ver toda la familia</label>` : ''}</div>
@@ -170,6 +170,7 @@ export const billsView = {
   },
   actions: {
     newBill() { billForm(); },
+    async scanTicket() { (await import('../scanner.js')).openScanner(); },
     tab(el) { tab = el.dataset.t; hooks.rerender(); },
     scope(el) { scopeAll = el.checked; hooks.rerender(); },
     done(el) { showDone = el.dataset.v === '1'; hooks.rerender(); },
