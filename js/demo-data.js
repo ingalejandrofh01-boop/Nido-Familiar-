@@ -254,6 +254,18 @@ export function seedDemo() {
         sp2: { wheelId: 'wh1', index: 4, label: 'Luis', memberId: 'm5', by: 'm3', at: now - 3 * 3600000 },
         sp3: { wheelId: 'wh2', index: 0, label: 'Tacos', memberId: '', by: 'm5', at: now - 50 * 3600000 }
       },
+      bills: (() => {
+        const t = new Date(); const Y = t.getFullYear(), M = t.getMonth(); const d = (m, day) => iso(new Date(Y, M + m, day)); const last = (m) => iso(new Date(Y, M + m + 1, 0));
+        const pay = (from, amount, date, confirmed, method = 'transferencia', note = '') => ({ id: 'p' + Math.random().toString(36).slice(2, 7), from, amount, date, method, note, proof: '', by: from, at: now - 86400000, confirmed });
+        return {
+          b1: { title: 'Renta de la casa', category: 'renta', total: 12000, date: d(0, 1), to: 'm3', split: 'porcentaje', inputs: { m1: 30, m2: 35, m3: 35 }, shares: { m1: 3600, m2: 4200, m3: 4200 }, plan: { freq: 'quincenal', n: 2, start: d(0, 15) }, recurring: { monthly: true, skip: [] }, notes: 'Papá le paga al casero el día último. CLABE en Notas 🔐', by: 'm3',
+            payments: [pay('m1', 1800, d(0, 14), true), pay('m2', 2100, d(0, 15), false, 'efectivo', 'Te lo dejé en el cajón')] },
+          b2: { title: 'Internet y streaming', category: 'internet', total: 600, date: d(0, 5), to: 'm1', split: 'igual', inputs: {}, shares: { m1: 200, m2: 200, m3: 200 }, plan: { freq: 'unico', n: 1, start: last(0) }, recurring: { monthly: true, skip: [] }, notes: '', by: 'm1', payments: [] },
+          b3: { title: 'Súper de Costco', category: 'super', total: 2400, date: iso(plus(-2)), to: 'm1', split: 'igual', inputs: {}, shares: { m1: 600, m2: 600, m3: 600, m6: 600 }, plan: { freq: 'unico', n: 1, start: iso(plus(3)) }, notes: 'Incluye lo de la posada', by: 'm1', payments: [pay('m2', 600, iso(plus(-1)), true)] },
+          b4: { title: 'Préstamo para la laptop de Ana', category: 'prestamo', total: 4500, date: d(-1, 20), to: 'm1', split: 'exacto', inputs: { m4: 4500 }, shares: { m4: 4500 }, plan: { freq: 'mensual', n: 3, start: d(-1, 20) }, notes: 'Sin intereses 😉', by: 'm1', payments: [pay('m4', 1500, d(-1, 20), true, 'efectivo')] },
+          b5: { title: 'Regalo de aniversario para mis papás', category: 'regalo', total: 1800, date: iso(plus(-12)), to: 'm1', split: 'partes', inputs: { m1: 1, m4: 1, m5: 1 }, shares: { m1: 600, m4: 600, m5: 600 }, plan: { freq: 'unico', n: 1, start: iso(plus(-5)) }, notes: '', by: 'm1', payments: [] }
+        };
+      })(),
       rewards: {
         r1: { title: 'Elegir la película del viernes', cost: 50, emoji: '🎬' },
         r2: { title: '30 min extra de videojuegos', cost: 80, emoji: '🎮' },

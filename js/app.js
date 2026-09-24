@@ -35,13 +35,15 @@ import { petsList, petDetail } from './views/pets.js';
 import { partiesList, partyDetail } from './views/parties.js';
 import ruleta from './views/wheel.js';
 import menuView from './views/menu.js';
+import { billsView, billDetail } from './views/bills.js';
+import { ensureRecurring } from './debts.js';
 import { initSync, syncPill, syncInfo, paint as paintSync } from './sync.js';
 
 const ROUTES = {
   inicio: home, agenda, intercambios: exchangesList, intercambio: exchangeDetail,
   fotos: photosHome, album: albumView, libro: bookView, listas: shopping, tareas: chores,
   dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor,
-  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView
+  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView, cuentas: billsView, cuenta: billDetail
 };
 export const NAV = [
   { r: 'inicio', ico: '🏠', t: 'Inicio' },
@@ -65,6 +67,7 @@ export const NAV = [
   { r: 'tareas', ico: '🧹', t: 'Tareas y puntos' },
   { r: 'mascotas', ico: '🐾', t: 'Mascotas' },
   { r: 'dinero', ico: '💰', t: 'Dinero' },
+  { r: 'cuentas', ico: '🤝', t: 'Cuentas claras' },
   { r: 'notas', ico: '📝', t: 'Notas' },
   { r: 'donde', ico: '🔎', t: '¿Dónde está?' },
   { sep: 'Nido' },
@@ -74,7 +77,7 @@ export const NAV = [
 const TABS = [['inicio', '🏠', 'Inicio'], ['agenda', '📅', 'Agenda'], ['intercambios', '🎁', 'Regalos'], ['fotos', '📖', 'Fotos'], ['mas', '☰', 'Más']];
 
 const $app = document.getElementById('app');
-let familyUnsub = null, colUnsubs = [];
+let familyUnsub = null, colUnsubs = [], recurT = null;
 let currentTheme = null, pageTheme = null;
 
 // ---------------- TEMAS ----------------
@@ -154,7 +157,7 @@ function shell() {
 }
 
 function markNav(name) {
-  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat', mascota: 'mascotas', fiesta: 'fiestas' };
+  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat', mascota: 'mascotas', fiesta: 'fiestas', cuenta: 'cuentas' };
   const active = groups[name] || name;
   const inMore = !TABS.some(t => t[0] === active);
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.r === active));
@@ -226,7 +229,7 @@ const COLS = {
   members: {}, events: {}, exchanges: {}, albums: {}, photos: { orderBy: ['createdAt', 'asc'] },
   shopping: {}, chores: {}, expenses: {}, messages: { orderBy: ['createdAt', 'desc'], limit: 150 },
   notes: {}, inventory: {}, backgrounds: {}, rewards: {}, notifications: { orderBy: ['createdAt', 'desc'], limit: 80 },
-  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}, pets: {}, parties: {}, wheels: {}, spins: { orderBy: ['at', 'desc'], limit: 60 }, menus: {}
+  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}, pets: {}, parties: {}, wheels: {}, spins: { orderBy: ['at', 'desc'], limit: 60 }, menus: {}, bills: {}
 };
 // Colecciones privadas: families/{fid}/private/{uid}/...
 const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', txns: 'txns', myCats: 'categories', budgets: 'budgets', goals: 'goals' };
@@ -258,6 +261,7 @@ async function startFamily() {
       if (name === 'backgrounds') refreshTheme();
       if (name === 'notifications') notifCenter.onData(rows);
       if (name === 'locations' && S.me) syncLocationSharing();
+      if (name === 'bills' && S.me) { clearTimeout(recurT); recurT = setTimeout(() => ensureRecurring().catch(e => console.warn('recurring', e)), 1500); }
       if (started) hooks.rerender();
     }));
   }

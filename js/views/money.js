@@ -57,8 +57,9 @@ export default {
     const tabs = `<div class="page-head"><div><h1>Dinero</h1><p>${mtab === 'personal' ? 'Tus finanzas personales, privadas sólo para ti' : 'Gastos compartidos, presupuesto y cuentas claras'}</p></div>
       ${mtab === 'familia' ? '<button class="btn primary" data-act="new">＋ Gasto familiar</button>' : ''}</div>
       <div class="seg mb"><button class="${mtab === 'personal' ? 'on' : ''}" data-act="mtab" data-t="personal">🙋 Mis finanzas</button>${isAdult() ? `<button class="${mtab === 'familia' ? 'on' : ''}" data-act="mtab" data-t="familia">👨‍👩‍👧 Familiar</button>` : ''}</div>`;
-    if (mtab === 'personal') return tabs + renderMyFinance();
-    return tabs + this.renderFamily();
+    const promo = `<a class="card deco mb cc-promo" href="#/cuentas"><span style="font-size:34px">🤝</span><div class="grow"><div class="bold">Cuentas claras</div><div class="small muted bold">Divide renta, súper o préstamos, págalos por quincena y lleva los abonos</div></div><span class="btn sm primary">Abrir</span></a>`;
+    if (mtab === 'personal') return tabs + promo + renderMyFinance();
+    return tabs + promo + this.renderFamily();
   },
   renderFamily() {
     if (!ym) ym = isoDate().slice(0, 7);
@@ -82,7 +83,7 @@ export default {
       <div class="grid g2 mt">
         <section class="card deco"><div class="card-title"><h3>📊 Por categoría</h3></div>
           <div class="col">${cats.map(([k, v]) => { const [em, n, c] = CATS[k] || CATS.otros; return `<div class="bar-row"><span>${em} ${n}</span><div class="bar"><i style="width:${v / max * 100}%;--c:${c}"></i></div><b>${money(v)}</b></div>`; }).join('') || '<div class="empty">Sin gastos este mes</div>'}</div></section>
-        <section class="card deco"><div class="card-title"><h3>🤝 Cuentas entre familiares</h3></div>
+        <section class="card deco"><div class="card-title"><h3>🤝 Cuentas entre familiares</h3><a href="#/cuentas">Cuentas claras ›</a></div>
           <div class="list">${debts.map(d => `<div class="item">${avatar(member(d.from), 'sm')}<div class="grow small"><b>${esc(member(d.from)?.name)}</b> le debe <b>${money(d.amount)}</b> a <b>${esc(member(d.to)?.name)}</b></div>${avatar(member(d.to), 'sm')}<button class="btn sm" data-act="settle" data-f="${d.from}" data-t="${d.to}" data-a="${d.amount}">Saldar</button></div>`).join('') || '<div class="empty"><div class="big">✅</div>Todos a mano</div>'}</div>
           <p class="tiny muted mt-s">Se calcula con los gastos marcados “se divide entre varios”.</p></section>
       </div>

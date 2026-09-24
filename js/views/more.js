@@ -6,7 +6,7 @@ import { unreadDMs } from './dm.js';
 
 const GROUPS = [
   ['Juntos', [['chat', '💬', 'Chat'], ['fiestas', '🎉', 'Fiestas'], ['encuestas', '🗳️', 'Encuestas'], ['ruleta', '🎡', 'Ruleta'], ['retos', '🏅', 'Retos'], ['viajes', '✈️', 'Viajes'], ['recetas', '🍲', 'Recetario'], ['capsula', '⏳', 'Cápsula del tiempo'], ['arbol', '🌳', 'Árbol genealógico'], ['ubicacion', '📍', '¿Dónde andamos?']]],
-  ['Casa', [['menu', '🍽️', 'Menú semanal'], ['listas', '🛒', 'Compras'], ['tareas', '🧹', 'Tareas y puntos'], ['mascotas', '🐾', 'Mascotas'], ['dinero', '💰', 'Dinero'], ['notas', '📝', 'Notas'], ['donde', '🔎', '¿Dónde está?']]],
+  ['Casa', [['menu', '🍽️', 'Menú semanal'], ['listas', '🛒', 'Compras'], ['tareas', '🧹', 'Tareas y puntos'], ['mascotas', '🐾', 'Mascotas'], ['dinero', '💰', 'Dinero'], ['cuentas', '🤝', 'Cuentas claras'], ['notas', '📝', 'Notas'], ['donde', '🔎', '¿Dónde está?']]],
   ['Nido', [['familia', '👨‍👩‍👧‍👦', 'Familia'], ['ajustes', '⚙️', 'Ajustes']]]
 ];
 export default {

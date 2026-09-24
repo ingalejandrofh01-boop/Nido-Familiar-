@@ -14,7 +14,7 @@ const uid6 = () => Math.random().toString(36).slice(2, 8) + Date.now().toString(
 export const newId = uid6;
 
 // ---------------- Almacenamiento seguro (demo) ----------------
-const LS_KEY = 'nido-demo-v7';
+const LS_KEY = 'nido-demo-v8';
 let mem = null;
 function load() {
   if (mem) return mem;

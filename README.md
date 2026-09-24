@@ -64,6 +64,7 @@ Para no requerir el plan de pago de Firebase Storage, las fotos se **comprimen e
 | 🎉 Fiestas y posadas | Confirmación (voy / tal vez / no) con cuántos van, "¿quién trae qué?" con lista típica según la fiesta (posada, carne asada, cena de Navidad…), ubicación con Maps y Waze, invitación por WhatsApp, cuenta regresiva; aparece en la agenda y en Inicio |
 | 🎡 Ruleta familiar | "¿Quién lava los trastes?", "¿Qué cenamos?"… con integrantes u opciones; el giro se ve en vivo en todos los teléfonos, no repite al último si quieres y queda anotado con conteo |
 | 🍽️ Menú semanal | Comida, cena (y desayuno) de cada día con quién cocina; sugiere platillos del recetario y arma la lista del súper con los ingredientes |
+| 🤝 Cuentas claras | Dividir renta, súper, servicios o préstamos en partes iguales, montos exactos, porcentaje o por partes; pagar en una sola exhibición, por quincenas (15 y último día), mensual o semanal; abonos con comprobante y confirmación de "recibido"; agenda de lo que toca pagar esta quincena y la próxima, saldos netos entre personas, cuentas que se repiten cada mes, recordatorios y pagos en el calendario |
 | 💾 Respaldo | En Ajustes: descarga un .zip con las fotos por capítulo, las recetas en texto y todos los datos; el administrador puede restaurarlo |
 | 💌 Amigo secreto | Mensajes anónimos: el que regala pregunta pistas sin revelar quién es |
 | 🍲 Recetario | Recetas con foto y autor, modo cocina paso a paso (pantalla encendida), favoritas, ingredientes directo a la lista de compras |

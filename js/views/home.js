@@ -6,6 +6,7 @@ import { occurrences, EVENT_TYPES } from '../events.js';
 import { openEventForm } from './agenda.js';
 import { pollCard, pollActions } from './polls.js';
 import { upcomingParties, rsvpCount, partyDetail } from './parties.js';
+import { periodTotals, agendaRows, cash } from '../debts.js';
 import { todayMenu, slotLabel, MEALS } from './menu.js';
 import { petAvatar, careButtons, careProgress, foodLeft, vaccinesDue, petDetail } from './pets.js';
 
@@ -40,6 +41,16 @@ function partyMenuWidget() {
   }
   const mc = menu.length ? `<a class="card deco" href="#/menu" style="text-decoration:none;color:inherit"><div class="card-title"><h3>🍽️ Hoy se come</h3><span class="small bold" style="color:var(--accent)">Menú</span></div>${menu.map(x => { const c = member(x.cook); return `<div class="row mt-s"><span class="chip">${MEALS[x.meal][0]} ${MEALS[x.meal][1]}</span><span class="grow bold small">${esc(slotLabel(x))}</span>${c ? `${avatar(c, 'sm')}` : ''}</div>`; }).join('')}</a>` : '';
   return `<div class="grid ${pc && mc ? 'g2' : ''} mt">${pc}${mc}</div>`;
+}
+
+// 🤝 Pagos de esta quincena
+function debtsWidget() {
+  const T = periodTotals(); const pay = T.pay.now + T.pay.overdue, get = T.get.now + T.get.overdue;
+  if (!pay && !get && !T.pay.next && !T.get.next) return '';
+  const next = agendaRows().find(r => r.from === S.me.id);
+  return `<a class="card deco mt debt-home" href="#/cuentas" style="text-decoration:none;color:inherit"><div class="card-title"><h3>🤝 Cuentas de la quincena</h3><span class="small bold" style="color:var(--accent)">Ver</span></div>
+    <div class="grid g3" style="gap:10px"><div class="dh"><span class="tiny bold muted">Pagas</span><b class="${T.pay.overdue ? 'bad' : ''}">${cash(pay)}</b>${T.pay.overdue ? `<span class="tiny bad">⚠️ ${cash(T.pay.overdue)} vencido</span>` : ''}</div><div class="dh"><span class="tiny bold muted">Te pagan</span><b>${cash(get)}</b></div><div class="dh"><span class="tiny bold muted">Próxima quincena</span><b>${cash(T.pay.next)}</b><span class="tiny muted">te pagan ${cash(T.get.next)}</span></div></div>
+    ${next ? `<div class="tiny bold mt-s">Siguiente: ${esc(next.bill.title)} · ${cash(next.left)} el ${fmtDate(next.due)}</div>` : ''}</a>`;
 }
 
 // 🐾 Cuidados de las mascotas en Inicio
@@ -102,7 +113,7 @@ export default {
     const evRow = (o) => {
       const T = EVENT_TYPES[o.type] || EVENT_TYPES.familiar;
       const people = (o.ev?.participants || (o.member ? [o.member.id] : [])).map(member).filter(Boolean);
-      const href = o.exchange ? `#/intercambio/${o.exchange.id}` : o.member ? `#/perfil/${o.member.id}` : o.pet ? `#/mascota/${o.pet.id}` : o.party ? `#/fiesta/${o.party.id}` : '';
+      const href = o.exchange ? `#/intercambio/${o.exchange.id}` : o.member ? `#/perfil/${o.member.id}` : o.pet ? `#/mascota/${o.pet.id}` : o.party ? `#/fiesta/${o.party.id}` : o.bill ? `#/cuenta/${o.bill.id}` : '';
       return `<div class="item ${href || o.ev ? 'clickable' : ''}" ${href ? `onclick="location.hash='${href}'"` : o.ev ? `data-act="editEvent" data-id="${o.ev.id}"` : ''}>
         <span class="emoji">${T.e}</span>
         <div class="grow"><div class="bold ellipsis">${o.ev?._private ? '🔒 ' : ''}${esc(o.title)}${o.years && o.type === 'cumple' ? ` · ${o.years} años` : ''}</div>
@@ -167,6 +178,7 @@ export default {
 
     ${juntos()}
     ${partyMenuWidget()}
+    ${debtsWidget()}
     ${petsWidget()}
 
     <div class="grid g2 mt">
