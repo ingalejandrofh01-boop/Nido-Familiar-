@@ -1,5 +1,5 @@
 // Service worker: permite instalar Nido como app y abrirla sin conexión
-const CACHE = 'nido-v13';
+const CACHE = 'nido-v14';
 const SHELL = [
   './', './index.html', './css/styles.css', './manifest.json',
   './js/app.js', './js/notifications.js', './js/views/myfinance.js', './js/avatar.js', './js/avatar-species.js', './js/avatar-color.js', './js/views/avatar-editor.js', './js/config.js', './js/db.js', './js/demo-data.js', './js/events.js', './js/fx.js', './js/store.js', './js/themes.js', './js/ui.js', './js/reveal.js', './js/wishes.js', './js/sync.js', './js/backup.js', './js/debts.js',

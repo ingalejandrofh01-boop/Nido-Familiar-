@@ -920,3 +920,34 @@ button, a, .item, .chip, .tab, .check { touch-action: manipulation; -webkit-user
 .debt-home .dh b { font-size: 20px; }
 @media (max-width: 640px) { .debt-home .grid.g3 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; } .debt-home .dh:last-child { grid-column: 1 / -1; } }
 .pay-i .grow { flex: 1 1 180px; }
+
+/* ---------------- Ventanas (modales): sólo se desplazan arriba/abajo ---------------- */
+html.modal-open, html.modal-open body { overflow: hidden; overscroll-behavior: none; }
+.modal-bg { overscroll-behavior: contain; }
+.modal { display: flex; flex-direction: column; overflow: hidden; padding: 0; max-height: min(calc(100dvh - 32px), 900px); touch-action: auto; }
+.modal-head { flex-shrink: 0; margin: 0; padding: 20px 22px 14px; border-bottom: 1px solid var(--card-border); }
+.modal-head h2 { min-width: 0; overflow-wrap: anywhere; }
+.modal-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; padding: 16px 22px 8px; }
+.modal-foot { flex-shrink: 0; margin: 0; padding: 12px 22px calc(14px + var(--safe-b, 0px)); border-top: 1px solid var(--card-border); background: var(--card-strong); }
+.modal-body > *:last-child { margin-bottom: 8px; }
+.modal-body .input, .modal-body select, .modal-body textarea { min-width: 0; max-width: 100%; }
+.modal-body input[type=date], .modal-body input[type=time], .modal-body input[type=month], .input[type=date], .input[type=time] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; width: 100%; min-height: 46px; text-align: left; }
+input[type=date]::-webkit-date-and-time-value, input[type=time]::-webkit-date-and-time-value { text-align: left; margin: 0; }
+.modal-body .frow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.modal-body .field { min-width: 0; }
+.modal-body .chips { flex-wrap: wrap; }
+.modal-body .chip { white-space: normal; max-width: 100%; }
+.modal-body .seg { display: flex; flex-wrap: wrap; max-width: 100%; }
+.modal-body img, .modal-body svg { max-width: 100%; }
+.frow { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 520px) { .frow, .modal-body .frow { grid-template-columns: minmax(0, 1fr); } .modal-body .frow .field[style*="max-width"] { max-width: none !important; } }
+@media (max-width: 640px) {
+  .modal { max-height: calc(100dvh - 12px); width: 100%; padding: 0; border-radius: 24px 24px 0 0; }
+  .modal.wide { width: 100%; }
+  .modal-head { padding: 16px 18px 12px; }
+  .modal-head h2 { font-size: 19px; }
+  .modal-body { padding: 14px 18px 6px; }
+  .modal-foot { padding: 10px 18px calc(12px + var(--safe-b, 0px)); }
+  .modal-foot .btn { flex: 1 1 auto; justify-content: center; }
+  .modal-foot .btn.danger[data-danger] { flex: 0 0 auto; }
+}

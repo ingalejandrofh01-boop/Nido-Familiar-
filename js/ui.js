@@ -81,7 +81,7 @@ export function modal({ title, body, submit, submitLabel = 'Guardar', wide = fal
         ${submit ? `<button type="submit" class="btn primary">${submitLabel}</button>` : ''}
       </div>`}
     </form>`;
-  const close = () => { if (!bg.isConnected) return; bg.remove(); onClose && onClose(); };
+  const close = () => { if (!bg.isConnected) return; bg.remove(); if (!root.children.length) document.documentElement.classList.remove('modal-open'); onClose && onClose(); };
   bg.addEventListener('click', e => { if (e.target === bg || e.target.closest('[data-close]')) close(); });
   const form = bg.querySelector('form');
   form.addEventListener('submit', async e => {
@@ -98,7 +98,9 @@ export function modal({ title, body, submit, submitLabel = 'Guardar', wide = fal
   if (danger) bg.querySelector('[data-danger]').addEventListener('click', async () => { if (await confirmBox(danger.confirm || '¿Seguro?')) { await danger.action(); close(); } });
   const esc_ = e => { if (!bg.isConnected) return removeEventListener('keydown', esc_); if (e.key === 'Escape' && bg === root.lastElementChild) close(); };
   addEventListener('keydown', esc_);
-  root.appendChild(bg);
+  root.appendChild(bg); document.documentElement.classList.add('modal-open');
+  // al enfocar un campo en el celular, que quede visible dentro de la ventana
+  form.addEventListener('focusin', e => { if (innerWidth <= 860 && e.target.matches('input, textarea, select')) setTimeout(() => e.target.scrollIntoView({ block: 'center', behavior: 'smooth' }), 280); });
   onOpen && onOpen(form, close);
   setTimeout(() => { const f = form.querySelector('input:not([type=hidden]):not([type=checkbox]):not([type=file]), textarea'); f && innerWidth > 640 && f.focus(); }, 50);
   return { el: form, close };
