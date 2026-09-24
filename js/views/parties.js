@@ -12,8 +12,24 @@ export const PARTY_TYPES = {
   cumple: ['🎂', 'Cumpleaños', ['Pastel', 'Velas', 'Piñata', 'Bolsitas de dulces', 'Botanas', 'Refrescos', 'Decoración', 'Desechables']],
   comida: ['🍲', 'Comida familiar', ['Plato fuerte', 'Arroz', 'Ensalada', 'Tortillas', 'Postre', 'Agua fresca', 'Desechables']],
   patrias: ['🇲🇽', 'Noche mexicana', ['Pozole', 'Tostadas', 'Crema y queso', 'Rábanos y lechuga', 'Tequila', 'Refrescos', 'Banderitas y adornos', 'Pambazos']],
+  anio_nuevo: ['🎆', 'Año Nuevo', ['Uvas', 'Sidra o champaña', 'Cena', 'Confeti y serpentinas', 'Espantasuegras', 'Hielo', 'Desechables']],
+  halloween: ['🎃', 'Halloween', ['Dulces', 'Calabazas', 'Decoración de terror', 'Botanas', 'Ponche "de bruja"', 'Refrescos', 'Hielo', 'Desechables']],
+  muertos: ['💀', 'Día de Muertos', ['Pan de muerto', 'Chocolate caliente', 'Cempasúchil', 'Veladoras', 'Calaveritas de azúcar', 'Tamales', 'Papel picado']],
+  infantil: ['🧸', 'Fiesta infantil', ['Pastel', 'Piñata', 'Dulces', 'Bolsitas', 'Juegos', 'Globos', 'Jugos', 'Desechables']],
+  xv: ['👑', 'XV años', ['Pastel', 'Centros de mesa', 'Música / DJ', 'Refrescos', 'Hielo', 'Recuerditos']],
+  boda: ['💍', 'Boda', ['Pastel', 'Flores', 'Música', 'Brindis', 'Recuerditos', 'Hielo']],
+  baby: ['🍼', 'Baby shower', ['Pastel', 'Botanas', 'Juegos', 'Globos', 'Recuerditos', 'Refrescos', 'Desechables']],
+  bautizo: ['🕊️', 'Bautizo / Comunión', ['Comida', 'Pastel', 'Recuerditos', 'Refrescos', 'Hielo', 'Desechables']],
+  graduacion: ['🎓', 'Graduación', ['Comida', 'Pastel', 'Globos', 'Brindis', 'Refrescos', 'Hielo']],
+  despedida: ['🥂', 'Despedida', ['Botanas', 'Bebidas', 'Hielo', 'Música', 'Desechables']],
+  amigos: ['🙌', 'Reunión con amigos', ['Botanas', 'Pizza', 'Refrescos', 'Hielo', 'Juegos de mesa', 'Desechables']],
+  futbol: ['⚽', 'Partido / carne y fut', ['Botanas', 'Alitas', 'Refrescos', 'Hielo', 'Desechables']],
+  karaoke: ['🎤', 'Noche de karaoke', ['Bocina y micrófonos', 'Botanas', 'Refrescos', 'Hielo', 'Desechables']],
+  pijamada: ['🌙', 'Pijamada', ['Palomitas', 'Películas', 'Cobijas', 'Dulces', 'Pizza', 'Refrescos']],
   otro: ['🎉', 'Otra fiesta', []]
 };
+// Nombre del tipo (si eligieron "Otra fiesta", el que escribieron)
+export const partyTypeLabel = (p) => p.type === 'otro' && p.customType ? p.customType : (PARTY_TYPES[p.type] || PARTY_TYPES.otro)[1];
 const RSVP = { si: ['✅', 'Voy'], quiza: ['🤔', 'Tal vez'], no: ['❌', 'No puedo'] };
 const rid = () => Math.random().toString(36).slice(2, 8);
 const party = (id) => (S.data.parties || []).find(p => p.id === id);
@@ -32,17 +48,25 @@ function partyForm(p = null) {
   modal({
     title: p ? '✏️ Editar fiesta' : '🎉 Organizar una fiesta', wide: true,
     body: `<div class="field"><label>¿Qué vamos a celebrar?</label><div class="chips">${Object.entries(PARTY_TYPES).map(([k, [e, l]]) => `<label class="chip chip-btn"><input type="radio" name="type" value="${k}" ${t0 === k ? 'checked' : ''}> ${e} ${l}</label>`).join('')}</div></div>
+      <div class="field" id="custom-type" ${t0 === 'otro' ? '' : 'hidden'}><label>¿Qué tipo de fiesta es?</label><input class="input" name="customType" maxlength="30" value="${esc(p?.customType || '')}" placeholder="Fiesta de disfraces, noche de juegos, inauguración…"></div>
       <div class="frow"><div class="field"><label>Nombre</label><input class="input" name="title" required value="${esc(p?.title || '')}" placeholder="Posada en casa de la abuela"></div><div class="field" style="max-width:90px"><label>Emoji</label><input class="input" name="emoji" value="${esc(p?.emoji || '')}" maxlength="4" placeholder="🪅"></div></div>
       <div class="frow"><div class="field"><label>Fecha</label><input class="input" type="date" name="date" required value="${esc(p?.date || '')}"></div><div class="field"><label>Hora</label><input class="input" type="time" name="time" value="${esc(p?.time || '')}"></div></div>
       <div class="frow"><div class="field"><label>Lugar</label><input class="input" name="place" value="${esc(p?.place || '')}" placeholder="Casa de la abuela Rosa"></div><div class="field"><label>¿Quién recibe?</label><select class="input" name="host">${members().map(m => `<option value="${m.id}" ${(p?.host || S.me.id) === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select></div></div>
       <div class="field"><label>Dirección (para abrir en Maps)</label><input class="input" name="address" value="${esc(p?.address || '')}" placeholder="Calle, número, colonia, ciudad"></div>
       <div class="field"><label>Tema, vestimenta o notas</label><input class="input" name="notes" value="${esc(p?.notes || '')}" placeholder="Ven con suéter navideño 🎅 · Traer algo para el intercambio"></div>
       ${p ? '' : '<label class="chip chip-btn"><input type="checkbox" name="tpl" checked> Llenar la lista de "¿quién trae qué?" con lo típico</label>'}`,
+    onOpen(form) {
+      // "Otra fiesta" → escribir qué tipo es; el emoji sugerido cambia con el tipo
+      form.querySelectorAll('[name=type]').forEach(r => r.addEventListener('change', () => {
+        const ct = form.querySelector('#custom-type'); ct.hidden = r.value !== 'otro'; if (r.value === 'otro') ct.querySelector('input').focus();
+        const em = form.querySelector('[name=emoji]'); if (em) em.placeholder = (PARTY_TYPES[r.value] || PARTY_TYPES.otro)[0];
+      }));
+    },
     danger: p ? { label: 'Borrar', confirm: '¿Borrar esta fiesta?', action: async () => { await S.db.remove('parties', p.id); hooks.go('fiestas'); } } : undefined,
     submit: async d => {
       if (!d.title.trim() || !d.date) { toast('Ponle nombre y fecha'); return false; }
       const [e] = PARTY_TYPES[d.type] || PARTY_TYPES.otro;
-      const data = { title: d.title.trim(), type: d.type, emoji: d.emoji || e, date: d.date, time: d.time, place: d.place, address: d.address, host: d.host, notes: d.notes };
+      const data = { title: d.title.trim(), type: d.type, customType: d.type === 'otro' ? (d.customType || '').trim() : '', emoji: d.emoji || e, date: d.date, time: d.time, place: d.place, address: d.address, host: d.host, notes: d.notes };
       if (p) { await S.db.update('parties', p.id, data); toast('✅ Guardado'); return; }
       const items = d.tpl ? (PARTY_TYPES[d.type] || PARTY_TYPES.otro)[2].map(name => ({ id: rid(), name, qty: '', by: '', done: false })) : [];
       const id = await S.db.add('parties', { ...data, items, rsvp: { [S.me.id]: { s: 'si', n: 1 } }, by: S.me.id });
@@ -85,7 +109,7 @@ export const partyDetail = {
     return `<a class="link" href="#/${S.guest ? 'invitado' : 'fiestas'}">‹ ${S.guest ? 'Mis invitaciones' : 'Fiestas'}</a>
       <section class="card xhero deco mt">
         <div class="xhero-inner">
-          <div class="row between wrap"><span class="chip accent">${esc(p.emoji || '🎉')} ${(PARTY_TYPES[p.type] || PARTY_TYPES.otro)[1]}</span>${S.guest ? '<span class="chip">🎟️ Eres invitado</span>' : `<button class="btn sm" data-act="editParty" data-id="${p.id}">✏️ Editar</button>`}</div>
+          <div class="row between wrap"><span class="chip accent">${esc(p.emoji || '🎉')} ${esc(partyTypeLabel(p))}</span>${S.guest ? '<span class="chip">🎟️ Eres invitado</span>' : `<button class="btn sm" data-act="editParty" data-id="${p.id}">✏️ Editar</button>`}</div>
           <div class="xhero-title mt">${esc(p.title)}</div>
           <div class="row wrap mt small bold" style="gap:14px"><span>📅 ${fmtDate(p.date, { weekday: true })}${p.time ? ' · ' + fmtTime(p.time) : ''}</span>${host ? `<span>🏠 Recibe ${esc(host.name)}</span>` : ''}</div>
           ${p.notes ? `<p class="bold mt">✨ ${esc(p.notes)}</p>` : ''}

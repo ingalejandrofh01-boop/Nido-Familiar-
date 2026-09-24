@@ -67,13 +67,18 @@ function loadQR() {
 }
 const docOf = (col, id) => (S.data[col] || []).find(x => x.id === id);
 
-export async function openInvite(col, id) {
-  let d = docOf(col, id); if (!d) return;
+// Crea el link de invitación del evento si todavía no tiene uno
+export async function ensureInvite(col, id) {
+  let d = docOf(col, id); if (!d) return null;
   if (!d.inviteCode) {
     const code = newCode();
     await S.db.update(col, id, { inviteCode: code, inviteOpen: true, familyName: S.family?.name || '', people: snapshotFor(col, d), guestUids: d.guestUids || [], guests: d.guests || {} });
     d = { ...d, inviteCode: code, inviteOpen: true };
   }
+  return d;
+}
+export async function openInvite(col, id) {
+  let d = await ensureInvite(col, id); if (!d) return;
   await loadQR();
   const k = KIND[kindOf(col)];
   const body = () => {
