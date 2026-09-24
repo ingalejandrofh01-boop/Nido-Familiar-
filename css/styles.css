@@ -951,3 +951,16 @@ input[type=date]::-webkit-date-and-time-value, input[type=time]::-webkit-date-an
   .modal-foot .btn { flex: 1 1 auto; justify-content: center; }
   .modal-foot .btn.danger[data-danger] { flex: 0 0 auto; }
 }
+
+/* ---------------- Respetar la barra de estado / notch del iPhone ---------------- */
+:root { --safe-t: env(safe-area-inset-top, 0px); }
+.modal-bg { padding-top: calc(var(--safe-t) + 16px); }
+.modal { max-height: min(calc(100dvh - var(--safe-t) - 32px), 900px); }
+@media (max-width: 640px) {
+  .modal-bg { padding-top: calc(var(--safe-t) + 10px); }
+  .modal { max-height: calc(100dvh - var(--safe-t) - 10px); }
+}
+.lightbox { padding-top: calc(20px + var(--safe-t)); padding-bottom: calc(20px + var(--safe-b, 0px)); }
+.lightbox .lb-close { top: calc(16px + var(--safe-t)); }
+.lightbox img { max-height: calc(78vh - var(--safe-t)); }
+.live-draw { padding-top: calc(20px + var(--safe-t)); }
