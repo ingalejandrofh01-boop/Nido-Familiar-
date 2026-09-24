@@ -7,6 +7,8 @@ import { openEventForm } from './agenda.js';
 import { pollCard, pollActions } from './polls.js';
 import { upcomingParties, rsvpCount, partyDetail } from './parties.js';
 import { periodTotals, agendaRows, cash } from '../debts.js';
+import { allGoals, goalStats, ring } from './goals.js';
+import { modal, toast as toast2 } from '../ui.js';
 import { todayMenu, slotLabel, MEALS } from './menu.js';
 import { petAvatar, careButtons, careProgress, foodLeft, vaccinesDue, petDetail } from './pets.js';
 
@@ -67,7 +69,38 @@ const PROMO = { ...randomAvatar(), anim: 'rebote' };
 
 function greeting() {
   const h = new Date().getHours();
-  return h < 12 ? 'Buenos días' : h < 19 ? 'Buenas tardes' : 'Buenas noches';
+  return h >= 5 && h < 12 ? 'Buenos días' : h >= 12 && h < 19 ? 'Buenas tardes' : 'Buenas noches';
+}
+export const timeOfDay = () => { const h = new Date().getHours(); return h >= 5 && h < 12 ? 'manana' : h >= 12 && h < 19 ? 'tarde' : 'noche'; };
+export const HOME_BLOCKS = { today: '📅 Hoy, próximos días, avisos y cumpleaños', partyMenu: '🎉 Próxima fiesta y 🍽️ menú de hoy', pets: '🐾 Mascotas', stats: '🔢 Resumen en números', quick: '⚡ Accesos rápidos', debts: '🤝 Cuentas de la quincena', goals: '🎯 Metas', juntos: '🗳️ Encuestas, viaje, cápsulas y retos', recap: '🌙 Resumen del día', memories: '✨ Recuerdo del día y ranking' };
+const DEFAULT_ORDER = {
+  manana: ['today', 'partyMenu', 'pets', 'stats', 'quick', 'debts', 'juntos', 'goals', 'memories', 'recap'],
+  tarde: ['quick', 'stats', 'today', 'debts', 'partyMenu', 'juntos', 'pets', 'goals', 'memories', 'recap'],
+  noche: ['recap', 'today', 'pets', 'juntos', 'memories', 'goals', 'partyMenu', 'debts', 'stats', 'quick']
+};
+function wrappedBanner() {
+  const t = new Date(), m = t.getMonth(); if (!(m === 11 || m === 0)) return '';
+  const Y = m === 0 ? t.getFullYear() - 1 : t.getFullYear();
+  return `<a class="card wrapped-card mt" href="#/resumen/${Y}"><span style="font-size:42px">🎁</span><div class="grow"><div class="bold" style="font-size:19px">¡Llegó el resumen ${Y}!</div><div class="small bold" style="opacity:.9">Fotos, fiestas, la compra más cara, el mes más caro, premios… ¡todo el año en historias!</div></div><span class="btn sm">Ver ›</span></a>`;
+}
+function goalsWidget() {
+  const gs = allGoals().filter(g => !g._private && !goalStats(g).done).sort((a, b) => goalStats(b).pct - goalStats(a).pct).slice(0, 3); if (!gs.length) return '';
+  return `<section class="card deco mt"><div class="card-title"><h3>🎯 Nuestras metas</h3><a href="#/metas">Ver todas</a></div><div class="goal-mini">${gs.map(g => { const st = goalStats(g); return `<a href="#/meta/${g.id}">${ring(st.pct, g.emoji, 78, g.photo)}<b class="small ellipsis">${esc(g.name)}</b><span class="tiny muted">${cash(st.saved)} de ${cash(st.target)}</span></a>`; }).join('')}</div></section>`;
+}
+function dayRecap() {
+  const t = isoDate(today0()), isT = (ts) => ts && isoDate(new Date(ts)) === t;
+  const photos = S.data.photos.filter(p => p.date === t || isT(p.createdAt)).length;
+  const chores = S.data.chores.filter(c => isT(c.doneAt) || c.lastDone === t).length;
+  const bought = S.data.shopping.filter(x => x.done && isT(x.doneAt)).length;
+  const care = (S.data.pets || []).reduce((a, p) => a + Object.values((p.log || {})[t] || {}).flat().length, 0);
+  const msgs = S.data.messages.filter(m => isT(m.createdAt)).length;
+  const pays = (S.data.bills || []).flatMap(b => b.payments || []).filter(p => p.date === t);
+  const contrib = [...(S.data.famgoals || [])].flatMap(g => g.contribs || []).filter(c => c.date === t && c.amount > 0).reduce((a, c) => a + c.amount, 0);
+  const tm = new Date(today0()); tm.setDate(tm.getDate() + 1); const tomorrow = occurrences(tm, tm).filter(o => !o.bill).slice(0, 3);
+  const items = [[photos, '📸', 'fotos nuevas'], [chores, '🧹', 'tareas hechas'], [bought, '🛒', 'cosas compradas'], [care, '🐾', 'cuidados a las mascotas'], [msgs, '💬', 'mensajes'], [pays.length, '💸', 'abonos'], [contrib ? cash(contrib) : 0, '🎯', 'para las metas']].filter(([v]) => v);
+  return `<section class="card deco mt recap"><div class="card-title"><h3>🌙 Así estuvo hoy</h3><span class="tiny muted">${new Date().toLocaleDateString('es-MX', { weekday: 'long', day: 'numeric', month: 'long' })}</span></div>
+    ${items.length ? `<div class="recap-grid">${items.map(([v, e, l]) => `<div><span>${e}</span><b>${v}</b><span class="tiny muted">${l}</span></div>`).join('')}</div>` : '<p class="small bold muted">Un día tranquilo en el nido 😌</p>'}
+    ${tomorrow.length ? `<div class="small bold mt">🔜 Mañana: ${tomorrow.map(o => esc(o.title)).join(' · ')}</div>` : ''}</section>`;
 }
 function cdBoxes(target) {
   return `<div class="countdown" data-cd="${target.getTime()}">
@@ -110,6 +143,11 @@ export default {
     const photo = S.data.photos.length ? S.data.photos[(new Date().getDate() * 7) % S.data.photos.length] : null;
     const board = members().filter(m => m.points != null).sort((a, b) => (b.points || 0) - (a.points || 0)).slice(0, 3);
 
+    const TOD = timeOfDay();
+    const menuT = todayMenu(); const TT = periodTotals();
+    const daySub = TOD === 'manana' ? (todays.length ? `Hoy ${todays.length === 1 ? 'hay 1 evento' : 'hay ' + todays.length + ' eventos'}${menuT[0] ? ' · se come ' + esc(slotLabel(menuT[0])) : ''}` : menuT[0] ? `Hoy se come ${esc(slotLabel(menuT[0]))}` : esc(th.tagline))
+      : TOD === 'tarde' ? ([todayChores.length - choresDone ? `Faltan ${todayChores.length - choresDone} tarea${todayChores.length - choresDone > 1 ? 's' : ''}` : '', TT.pay.now + TT.pay.overdue ? `pagas ${cash(TT.pay.now + TT.pay.overdue)} esta quincena` : '', pendingShop ? `${pendingShop} cosas por comprar` : ''].filter(Boolean).join(' · ') || esc(th.tagline))
+      : 'Así estuvo el día en el nido 💛';
     const evRow = (o) => {
       const T = EVENT_TYPES[o.type] || EVENT_TYPES.familiar;
       const people = (o.ev?.participants || (o.member ? [o.member.id] : [])).map(member).filter(Boolean);
@@ -121,38 +159,36 @@ export default {
         <div class="avatars">${people.slice(0, 4).map(p => avatar(p, 'sm')).join('')}</div></div>`;
     };
 
-    return `
-    <section class="card hero deco">
+    const B = {
+      hero: `<section class="card hero deco">
       <div class="hero-emoji">${th.emoji}</div>
       <div class="small bold muted">${esc(S.family?.name || '')} · ${th.emoji} ${esc(th.name)}</div>
       ${bdayToday ? `<div class="hero-greet">¡Feliz cumpleaños, ${esc(bdayToday.name)}! 🎂</div>
         <div class="hero-sub">Hoy cumple ${nextBirthday(bdayToday).age} años. ¡Que se note el cariño!</div>
         <button class="btn primary mt" data-act="party">🎉 Lanzar confeti</button>`
-        : `<div class="hero-greet">${greeting()}, ${esc(me.name.split(' ')[0])} 👋</div>
-        <div class="hero-sub">${esc(th.tagline)}</div>`}
+        : `<div class="hero-greet">${greeting()}, ${esc(me.name.split(' ')[0])} ${TOD === 'manana' ? '☀️' : TOD === 'tarde' ? '🌤️' : '🌙'}</div>
+        <div class="hero-sub">${daySub}</div>`}
       ${hol ? `<div class="mt small bold">${hol.emoji} ${hol.days === 0 ? `¡Hoy es ${esc(hol.label)}!` : `Faltan para ${esc(hol.label)}:`}</div>${hol.days > 0 ? cdBoxes(hol.date) : ''}` : ''}
-    </section>
-
-    ${!me.avatar ? `<a class="card deco row mt" href="#/avatar/${me.id}" style="text-decoration:none;gap:16px">
+    </section>`,
+      promo: `${!me.avatar ? `<a class="card deco row mt" href="#/avatar/${me.id}" style="text-decoration:none;gap:16px">
       <span class="avatar ava lg live">${renderAvatar(PROMO, { raw: true })}</span>
-      <div class="grow"><div class="bold" style="font-size:18px">🐾 ¡Crea tu avatar animado!</div><div class="small muted bold">Elige tu animalito, sus colores, lentes, sombreros y cómo se mueve.</div></div><span class="btn primary">Crear</span></a>` : ''}
-
-    <div class="quick mt">
+      <div class="grow"><div class="bold" style="font-size:18px">🐾 ¡Crea tu avatar animado!</div><div class="small muted bold">Elige tu animalito, sus colores, lentes, sombreros y cómo se mueve.</div></div><span class="btn primary">Crear</span></a>` : ''}`,
+      wrapped: wrappedBanner(),
+      quick: `<div class="quick mt">
       <a href="#/agenda" data-act="newEvent"><span>📅</span>Evento</a>
-      <a href="#/intercambios"><span>🎁</span>Intercambio</a>
+      <a href="#/intercambios"><span>🎁</span>Regalos</a>
       <a href="#/fotos"><span>📸</span>Fotos</a>
       <a href="#/listas"><span>🛒</span>Compras</a>
-    </div>
-
-    <div class="grid g4 mt">
-      <a class="card pad-sm stat" href="#/agenda" style="text-decoration:none"><span class="v">📅 ${todays.length}</span><span class="l">Eventos hoy</span></a>
-      <a class="card pad-sm stat" href="#/listas" style="text-decoration:none"><span class="v">🛒 ${pendingShop}</span><span class="l">Por comprar</span></a>
-      ${isAdult() ? `<a class="card pad-sm stat" href="#/dinero" style="text-decoration:none"><span class="v">${money(monthSpend)}</span><span class="l">Gastos del mes</span></a>`
+      <a href="#/cuentas"><span>🤝</span>Cuentas</a>
+    </div>`,
+      stats: `<div class="grid g4 mt">
+      <a class="card pad-sm stat" href="#/agenda" style="text-decoration:none"><span class="v">📅 <span data-count="${todays.length}">${todays.length}</span></span><span class="l">Eventos hoy</span></a>
+      <a class="card pad-sm stat" href="#/listas" style="text-decoration:none"><span class="v">🛒 <span data-count="${pendingShop}">${pendingShop}</span></span><span class="l">Por comprar</span></a>
+      ${isAdult() ? `<a class="card pad-sm stat" href="#/dinero" style="text-decoration:none"><span class="v" data-count="${monthSpend}" data-fmt="money">${money(monthSpend)}</span><span class="l">Gastos del mes</span></a>`
         : `<a class="card pad-sm stat" href="#/fotos" style="text-decoration:none"><span class="v">📸 ${S.data.photos.length}</span><span class="l">Recuerdos</span></a>`}
       <a class="card pad-sm stat" href="#/tareas" style="text-decoration:none"><span class="v">✅ ${choresDone}/${todayChores.length}</span><span class="l">Tareas de hoy</span></a>
-    </div>
-
-    <div class="grid g2 mt">
+    </div>`,
+      today: `<div class="grid g2 mt">
       <section class="card deco">
         <div class="card-title"><h3>📅 Hoy</h3><a href="#/agenda">Ver agenda</a></div>
         <div class="list">${todays.length ? todays.map(evRow).join('') : `<div class="empty"><div class="big">🌤️</div>Nada agendado para hoy</div>`}</div>
@@ -174,14 +210,10 @@ export default {
           <div class="bday-row">${bdays.map(({ m, nb }) => `<a class="bday" href="#/perfil/${m.id}" style="text-decoration:none">${avatar(m, 'lg')}<div class="bold small mt-s ellipsis">${esc(m.name)}</div><div class="tiny muted">${fmtDate(isoDate(nb.date))}</div><div class="days">${nb.days === 0 ? '¡HOY! 🎉' : nb.days === 1 ? 'Mañana' : `en ${nb.days} días`}</div></a>`).join('') || '<div class="empty">Agrega cumpleaños en Familia</div>'}</div>
         </section>
       </div>
-    </div>
-
-    ${juntos()}
-    ${partyMenuWidget()}
-    ${debtsWidget()}
-    ${petsWidget()}
-
-    <div class="grid g2 mt">
+    </div>`,
+      recap: dayRecap(),
+      juntos: juntos(), partyMenu: partyMenuWidget(), debts: debtsWidget(), pets: petsWidget(), goals: goalsWidget(),
+      memories: `<div class="grid g2 mt">
       ${photo ? `<section class="card deco"><div class="card-title"><h3>✨ Recuerdo del día</h3><a href="#/album/${photo.albumId}">Ver álbum</a></div>
         <div class="row" style="align-items:stretch;gap:16px"><div class="polaroid" style="width:48%;flex-shrink:0" onclick="location.hash='#/album/${photo.albumId}'"><img src="${photo.thumb}" alt=""><div class="cap">${esc(photo.caption || '')}</div></div>
         <div class="grow col" style="justify-content:center"><div style="font-family:Caveat,cursive;font-size:28px;line-height:1.1">${esc(photo.caption || 'Un bonito momento')}</div><div class="small muted">${photo.date ? fmtDate(photo.date, { year: true }) : ''}</div>
@@ -189,7 +221,12 @@ export default {
       <section class="card deco"><div class="card-title"><h3>🏆 Ranking de tareas</h3><a href="#/tareas">Tareas</a></div>
         ${board.length ? `<div class="podium">${[board[1], board[0], board[2]].filter(Boolean).map((m) => { const pos = board.indexOf(m); return `<div class="p">${avatar(m, pos === 0 ? 'lg' : '')}<div class="small bold">${esc(m.name)}</div><div class="tiny muted">${m.points || 0} pts</div><div class="blk" style="height:${[90, 64, 46][pos]}px">${['🥇', '🥈', '🥉'][pos]}</div></div>`; }).join('')}</div>` : '<div class="empty">Aún no hay puntos</div>'}
       </section>
-    </div>`;
+    </div>`
+    };
+    const L = me.homeLayout || {}; const hidden = new Set(L.hidden || []);
+    const order = [...new Set([...(L.order || DEFAULT_ORDER[TOD]), ...Object.keys(HOME_BLOCKS)])].filter(k => B[k] !== undefined);
+    return ['hero', 'promo', 'wrapped', ...order.filter(k => !['hero', 'promo', 'wrapped'].includes(k) && !hidden.has(k))].map(k => B[k] ? `<div class="hb" data-hb="${k}">${B[k]}</div>` : '').join('\n') +
+      `<div class="center mt"><button class="btn sm ghost" data-act="customize">✏️ Personalizar Inicio</button></div>`;
   },
   after(root) { startCountdowns(root); },
   actions: {
@@ -198,6 +235,16 @@ export default {
     rsvp: partyDetail.actions.rsvp,
     newEvent(el, e) { openEventForm(); },
     editEvent(el) { openEventForm(findEvent(el.dataset.id)); },
+    customize() {
+      const L = S.me.homeLayout || {}; let order = [...new Set([...(L.order || DEFAULT_ORDER[timeOfDay()]), ...Object.keys(HOME_BLOCKS)])]; const hidden = new Set(L.hidden || []);
+      const paint = (f) => { f.querySelector('[data-hl]').innerHTML = order.map((k, i) => `<div class="hl-row ${hidden.has(k) ? 'off' : ''}"><label class="grow"><input type="checkbox" data-k="${k}" ${hidden.has(k) ? '' : 'checked'}> ${HOME_BLOCKS[k]}</label><button type="button" class="icon-btn sm" data-up="${i}" ${i ? '' : 'disabled'}>↑</button><button type="button" class="icon-btn sm" data-dn="${i}" ${i < order.length - 1 ? '' : 'disabled'}>↓</button></div>`).join('');
+        f.querySelectorAll('[data-k]').forEach(c => c.onchange = () => { c.checked ? hidden.delete(c.dataset.k) : hidden.add(c.dataset.k); paint(f); });
+        f.querySelectorAll('[data-up]').forEach(b => b.onclick = () => { const i = +b.dataset.up; [order[i - 1], order[i]] = [order[i], order[i - 1]]; paint(f); });
+        f.querySelectorAll('[data-dn]').forEach(b => b.onclick = () => { const i = +b.dataset.dn; [order[i + 1], order[i]] = [order[i], order[i + 1]]; paint(f); }); };
+      modal({ title: '✏️ Personalizar Inicio', body: `<p class="small muted bold">Elige qué ver y en qué orden. Si no lo cambias, Nido acomoda el Inicio según la hora: en la mañana tu día, en la tarde pendientes y en la noche el resumen.</p><div class="hl" data-hl></div>`,
+        danger: { label: '↺ Según la hora', confirm: '¿Volver al orden automático según la hora del día?', action: async () => { await S.db.update('members', S.me.id, { homeLayout: null }); } },
+        onOpen: (f) => paint(f), submit: async () => { await S.db.update('members', S.me.id, { homeLayout: { order, hidden: [...hidden] } }); toast2('✅ Inicio personalizado'); } });
+    },
     party() { for (let i = 0; i < 5; i++) setTimeout(() => hooks.celebrate(innerWidth * (0.2 + Math.random() * 0.6), innerHeight * (0.2 + Math.random() * 0.3), 'confetti'), i * 250); }
   }
 };

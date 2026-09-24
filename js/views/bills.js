@@ -1,6 +1,7 @@
 // 🤝 Cuentas claras: dividir gastos, pagos por quincena, abonos y confirmación de recibido
 import { S, hooks, members, member, notify, isAdult } from '../store.js';
 import { esc, avatar, modal, toast, fmtDate, isoDate, parseDate, today0, confirmBox, compressImage, pickFiles, timeAgo } from '../ui.js';
+import { coin } from '../motion.js';
 import { r2, cash, BILL_CATS, SPLITS, FREQS, METHODS, computeShares, dueDates, payday, quincena, debtors, schedule, personStatus, billStatus, planLabel, agendaRows, periodTotals, pairBalances, personName } from '../debts.js';
 
 let tab = 'agenda', scopeAll = false, showDone = false;
@@ -103,7 +104,7 @@ function paymentForm(b, from, suggested) {
       const fresh = bill(b.id) || b;
       const p = { id: rid(), from: d.from, amount, date: d.date || isoDate(), method: d.method || 'otro', note: d.note || '', proof, by: S.me.id, at: Date.now(), confirmed: fresh.to === S.me.id };
       await S.db.update('bills', b.id, { payments: [...(fresh.payments || []), p] });
-      try { navigator.vibrate && navigator.vibrate([30, 30, 60]); } catch { }
+      coin();
       const after = personStatus({ ...fresh, payments: [...(fresh.payments || []), p] }, d.from);
       if (after.done) { hooks.celebrate(innerWidth / 2, innerHeight / 3, 'confetti'); toast(`🎉 ¡${d.from === S.me.id ? 'Quedaste' : personName(d.from) + ' quedó'} al corriente en ${b.title}!`); } else toast(`💸 Abono de ${cash(amount)} registrado · faltan ${cash(after.remaining)}`);
       if (p.confirmed) { if (d.from !== S.me.id) notify({ to: [d.from], icon: '✅', title: `${personName(S.me.id)} registró tu pago de ${cash(amount)}`, body: `${b.title}${after.done ? ' · ¡quedaste al corriente! 🎉' : ` · te faltan ${cash(after.remaining)}`}`, link: 'cuenta/' + b.id }); }

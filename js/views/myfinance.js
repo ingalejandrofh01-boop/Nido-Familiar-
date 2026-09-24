@@ -1,4 +1,5 @@
 // 🙋 Mis finanzas: dinero personal y privado de cada integrante
+import { goalForm as goalFormG, contribForm } from './goals.js';
 import { S, hooks, priv } from '../store.js';
 import { esc, isoDate, modal, toast, MONTHS, fmtShort, confirmBox } from '../ui.js';
 
@@ -280,14 +281,7 @@ export const financeActions = {
   editTx(el) { const t = S.data.txns.find(x => x.id === el.dataset.id); txForm(t.kind, t); },
   newAccount() { accountForm(); }, editAccount(el) { accountForm(S.data.accounts.find(a => a.id === el.dataset.id)); },
   newBudget() { budgetForm(); }, editBudget(el) { budgetForm(S.data.budgets.find(b => b.id === el.dataset.id)); },
-  newGoal() { goalForm(); }, editGoal(el) { goalForm(S.data.goals.find(g => g.id === el.dataset.id)); },
-  abonar(el) {
-    const g = S.data.goals.find(x => x.id === el.dataset.id);
-    modal({ title: `${esc(g.emoji)} Abonar a ${esc(g.name)}`, body: `<div class="field"><label>¿Cuánto?</label><input class="input" name="a" type="number" inputmode="decimal" required style="font-size:24px;font-weight:900;text-align:center"></div>`, submit: async d => {
-      const a = Number(d.a); if (!a) return false; const saved = (g.saved || 0) + a;
-      await S.db.update(priv('goals'), g.id, { saved });
-      if (saved >= g.target) { hooks.celebrate(innerWidth / 2, innerHeight / 3, 'confetti'); toast(`🎉 ¡Lograste tu meta: ${g.name}!`); } else toast(`🐷 Llevas ${Math.round(saved / g.target * 100)}%`);
-    } });
-  },
+  newGoal() { goalFormG(null, true); }, editGoal(el) { hooks.go('meta/' + el.dataset.id); },
+  abonar(el) { const g = S.data.goals.find(x => x.id === el.dataset.id); if (g) contribForm({ ...g, _private: true }); },
   async delCat(el) { if (await confirmBox('¿Quitar esta categoría? (tus movimientos no se borran)')) await S.db.remove(priv('categories'), el.dataset.id); }
 };

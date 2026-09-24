@@ -36,6 +36,14 @@ import { partiesList, partyDetail } from './views/parties.js';
 import ruleta from './views/wheel.js';
 import menuView from './views/menu.js';
 import { billsView, billDetail } from './views/bills.js';
+import { goalsView, goalDetail } from './views/goals.js';
+import { wrappedView } from './views/wrapped.js';
+import { icon } from './icons.js';
+import { openQuickAdd } from './quickadd.js';
+import { openSearch } from './search.js';
+import { initGestures } from './gestures.js';
+import { animateView, playFor } from './motion.js';
+import { maybeOnboard } from './onboarding.js';
 import { ensureRecurring } from './debts.js';
 import { initSync, syncPill, syncInfo, paint as paintSync } from './sync.js';
 
@@ -43,7 +51,7 @@ const ROUTES = {
   inicio: home, agenda, intercambios: exchangesList, intercambio: exchangeDetail,
   fotos: photosHome, album: albumView, libro: bookView, listas: shopping, tareas: chores,
   dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor,
-  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView, cuentas: billsView, cuenta: billDetail
+  recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView, cuentas: billsView, cuenta: billDetail, metas: goalsView, meta: goalDetail, resumen: wrappedView
 };
 export const NAV = [
   { r: 'inicio', ico: '🏠', t: 'Inicio' },
@@ -68,13 +76,15 @@ export const NAV = [
   { r: 'mascotas', ico: '🐾', t: 'Mascotas' },
   { r: 'dinero', ico: '💰', t: 'Dinero' },
   { r: 'cuentas', ico: '🤝', t: 'Cuentas claras' },
+  { r: 'metas', ico: '🎯', t: 'Metas' },
   { r: 'notas', ico: '📝', t: 'Notas' },
   { r: 'donde', ico: '🔎', t: '¿Dónde está?' },
   { sep: 'Nido' },
   { r: 'familia', ico: '👨‍👩‍👧‍👦', t: 'Familia' },
+  { r: 'resumen', ico: '🎁', t: 'Resumen del año' },
   { r: 'ajustes', ico: '⚙️', t: 'Ajustes' }
 ];
-const TABS = [['inicio', '🏠', 'Inicio'], ['agenda', '📅', 'Agenda'], ['intercambios', '🎁', 'Regalos'], ['fotos', '📖', 'Fotos'], ['mas', '☰', 'Más']];
+const TABS = [['inicio', '🏠', 'Inicio'], ['agenda', '📅', 'Agenda'], ['+', '＋', 'Agregar'], ['fotos', '📖', 'Fotos'], ['mas', '☰', 'Más']];
 
 const $app = document.getElementById('app');
 let familyUnsub = null, colUnsubs = [], recurT = null;
@@ -138,33 +148,40 @@ function parseHash() {
   return { name: ROUTES[name] ? name : 'inicio', params };
 }
 hooks.go = (path) => { location.hash = '#/' + path; };
+// Ir a una sección y ejecutar una de sus acciones (lo usa el botón ＋)
+hooks.runAction = (route, act, ds = {}, pre) => {
+  const mk = () => { const b = document.createElement('button'); Object.assign(b.dataset, ds); return b; };
+  const doIt = () => { const V = ROUTES[route]; if (!V?.actions) return; if (pre && V.actions[pre]) V.actions[pre](mk()); setTimeout(() => V.actions[act] && V.actions[act](mk()), pre ? 150 : 0); };
+  if (S.route.name === route) doIt(); else { location.hash = '#/' + route; setTimeout(doIt, 380); }
+};
 
 function shell() {
   const nav = NAV.filter(n => !n.adult || ['admin', 'adulto'].includes(S.me?.role));
   $app.innerHTML = `
     ${S.isDemo ? `<div class="demo-banner" data-act="demoInfo">🧪 Modo demo · toca para saber más</div>` : ''}
-    <header class="mtop"><a href="#/perfil/${S.me?.id}" class="mtop-me">${avatar(S.me, 'sm')}</a><div class="grow"><div class="brand-name" style="font-size:20px">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div>${S.isDemo ? '<span class="chip" data-act="demoInfo" style="font-size:11px">🧪 Demo</span>' : ''}${syncPill()}<button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></header>
+    <header class="mtop"><a href="#/perfil/${S.me?.id}" class="mtop-me">${avatar(S.me, 'sm')}</a><div class="grow"><div class="brand-name" style="font-size:20px">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div>${S.isDemo ? '<span class="chip" data-act="demoInfo" style="font-size:11px">🧪 Demo</span>' : ''}${syncPill()}<button class="bell" data-act="search" aria-label="Buscar">${icon('buscar')}</button><button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></header>
     <div class="shell">
       <aside class="sidebar">
         <div class="brand"><span class="brand-logo">🪺</span><div class="grow"><div class="brand-name">${esc(APP_NAME)}</div><div class="brand-fam">${esc(S.family?.name || '')}</div></div><button class="bell" data-act="notifs" aria-label="Notificaciones">🔔<span class="notif-badge" style="display:none"></span></button></div>
+        <div class="side-actions"><button class="btn primary side-add" data-act="quickAdd">${icon('mas_add')} Agregar</button><button class="bell" data-act="search" aria-label="Buscar" title="Buscar (Ctrl+K)">${icon('buscar')}</button></div>
         <div class="side-sync">${syncPill()}</div>
-        ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${n.ico}</span>${n.t}</a>`).join('')}
+        ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${icon(n.r) || n.ico}</span>${n.t}</a>`).join('')}
       </aside>
       <main class="main" id="view"></main>
     </div>
-    <nav class="tabbar">${TABS.map(([r, i, t]) => `<a class="tab" data-r="${r}" href="#/${r}"><span class="ico">${i}</span>${t}</a>`).join('')}</nav>
+    <nav class="tabbar">${TABS.map(([r, i, t]) => r === '+' ? `<button class="tab tab-add" data-act="quickAdd" aria-label="Agregar"><span class="ico">${icon('mas_add')}</span></button>` : `<a class="tab" data-r="${r}" href="#/${r}"><span class="ico">${icon(r) || i}</span>${t}</a>`).join('')}</nav>
     <button class="sos-fab" data-act="sos" aria-label="Emergencia">SOS</button>`;
 }
 
 function markNav(name) {
-  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat', mascota: 'mascotas', fiesta: 'fiestas', cuenta: 'cuentas' };
+  const groups = { intercambio: 'intercambios', album: 'fotos', libro: 'fotos', perfil: 'familia', avatar: 'familia', receta: 'recetas', viaje: 'viajes', dm: 'chat', mascota: 'mascotas', fiesta: 'fiestas', cuenta: 'cuentas', meta: 'metas' };
   const active = groups[name] || name;
   const inMore = !TABS.some(t => t[0] === active);
   document.querySelectorAll('.nav-link').forEach(a => a.classList.toggle('active', a.dataset.r === active));
   document.querySelectorAll('.tab').forEach(a => a.classList.toggle('active', a.dataset.r === active || (inMore && a.dataset.r === 'mas')));
 }
 
-let renderQueued = false, lastRouteKey = '';
+let renderQueued = false, lastRouteKey = '', routeChanged = true;
 function render() {
   const view = document.getElementById('view'); if (!view) return;
   const { name, params } = S.route; const V = ROUTES[name];
@@ -178,6 +195,7 @@ function render() {
   catch (e) { console.error(e); view.innerHTML = `<div class="card empty"><div class="big">😵</div>Algo salió mal al mostrar esta sección.<br><small class="faint">${esc(e.message)}</small></div>`; }
   if (keep) { const el = document.getElementById(keep.id); if (el) { el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch { } } }
   V.after && V.after(view, params);
+  animateView(view, routeChanged); routeChanged = false;
   notifCenter.updateBadges();
   const me = document.querySelector('.mtop-me'); if (me && S.me) me.innerHTML = avatar(S.me, 'sm');
 }
@@ -188,7 +206,7 @@ function onRoute() {
   S.route = parseHash();
   const key = S.route.name + '/' + S.route.params.join('/');
   if (key !== lastRouteKey) {
-    clearSubs(); lastRouteKey = key; markNav(S.route.name);
+    clearSubs(); lastRouteKey = key; markNav(S.route.name); routeChanged = true;
     if (S.route.name !== 'avatar') resetAvatarDraft();
     const v = document.getElementById('view');
     if (v) { v.classList.remove('view-enter'); void v.offsetWidth; v.classList.add('view-enter'); }
@@ -203,14 +221,16 @@ const globalActions = {
   sos: () => openSOS(),
   notifs: () => notifCenter.openPanel(),
   demoInfo: () => auth.demoInfo(),
-  syncInfo: () => syncInfo()
+  syncInfo: () => syncInfo(),
+  quickAdd: () => openQuickAdd(),
+  search: () => openSearch()
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
   const act = el.dataset.act;
   const V = ROUTES[S.route.name];
   const fn = (V && V.actions && V.actions[act]) || globalActions[act] || auth.actions[act];
-  if (fn) { e.preventDefault(); fn(el, e); }
+  if (fn) { e.preventDefault(); playFor(act, el); fn(el, e); }
 });
 document.addEventListener('change', e => {
   const el = e.target.closest('[data-change]'); if (!el) return;
@@ -229,7 +249,7 @@ const COLS = {
   members: {}, events: {}, exchanges: {}, albums: {}, photos: { orderBy: ['createdAt', 'asc'] },
   shopping: {}, chores: {}, expenses: {}, messages: { orderBy: ['createdAt', 'desc'], limit: 150 },
   notes: {}, inventory: {}, backgrounds: {}, rewards: {}, notifications: { orderBy: ['createdAt', 'desc'], limit: 80 },
-  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}, pets: {}, parties: {}, wheels: {}, spins: { orderBy: ['at', 'desc'], limit: 60 }, menus: {}, bills: {}
+  recipes: {}, capsules: {}, polls: {}, trips: {}, challenges: {}, locations: {}, pets: {}, parties: {}, wheels: {}, spins: { orderBy: ['at', 'desc'], limit: 60 }, menus: {}, bills: {}, famgoals: {}
 };
 // Colecciones privadas: families/{fid}/private/{uid}/...
 const PRIVATE = { myEvents: 'events', myNotes: 'notes', accounts: 'accounts', txns: 'txns', myCats: 'categories', budgets: 'budgets', goals: 'goals' };
@@ -242,7 +262,7 @@ async function startFamily() {
     if (!membersLoaded || !famLoaded) return;
     S.me = S.data.members.find(m => m.uid === S.user.uid) || null;
     if (!S.me) { auth.claimProfile(); started = false; return; }
-    if (!started) { started = true; shell(); paintSync(); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); syncLocationSharing(); }
+    if (!started) { started = true; shell(); paintSync(); initGestures(); setTimeout(maybeOnboard, 1200); lastRouteKey = ''; onRoute(); notifCenter.updateBadges(); notifCenter.dailyCheck(); syncLocationSharing(); }
     else hooks.rerender();
   };
   familyUnsub = S.db.watchFamily(f => {

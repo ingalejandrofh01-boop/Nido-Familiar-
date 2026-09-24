@@ -45,7 +45,12 @@ export const sfx = {
   paper() { noise(.25, 4200, .18); },
   scratch() { noise(.05, 5200, .05); },
   chime() { [523, 659, 784, 1047].forEach((f, i) => tone(f, 0, .5, 'triangle', .16, i * .09)); },
-  shake() { noise(.12, 1500, .12); }
+  shake() { noise(.12, 1500, .12); },
+  check() { tone(880, 1320, .09, 'sine', .12); tone(1320, 1760, .12, 'sine', .08, .06); },
+  send() { tone(600, 1200, .14, 'sine', .1); },
+  coin() { tone(1568, 0, .12, 'square', .06); tone(2093, 0, .3, 'square', .06, .08); },
+  soft() { tone(300, 220, .06, 'sine', .08); },
+  whoosh() { noise(.22, 900, .08); }
 };
 const vib = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch { } };
 

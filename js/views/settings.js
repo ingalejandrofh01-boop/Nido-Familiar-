@@ -4,6 +4,8 @@ import { esc, modal, toast, compressImage, pickFiles, confirmBox } from '../ui.j
 import { THEMES, renderScene, seasonFor } from '../themes.js';
 import { setIntensity } from '../fx.js';
 import { askPermission } from '../notifications.js';
+import { openOnboarding } from '../onboarding.js';
+import { soundOn, toggleSound } from '../reveal.js';
 import { createBackup, readBackupFile, restoreBackup, backupSummary } from '../backup.js';
 
 const lsGet = k => { try { return localStorage.getItem(k); } catch { return null; } };
@@ -64,6 +66,9 @@ export default {
           <div class="item"><span class="emoji">📧</span><div class="grow"><div class="bold">${esc(S.me?.name || '')}</div><div class="tiny muted">${esc(S.user?.email || '')}</div></div></div>
           <div class="row wrap mt"><a class="btn primary" href="#/avatar/${S.me?.id}">🐾 Mi avatar</a><a class="btn" href="#/perfil/${S.me?.id}">Mi perfil</a>${S.isDemo ? '<button class="btn" data-act="resetDemo">↺ Reiniciar demo</button>' : ''}<button class="btn danger" data-act="logout">Cerrar sesión</button></div></section>
       </div>
+      <section class="card deco mt"><div class="card-title"><h3>🔊 Sonidos y vibración</h3></div>
+        <p class="small muted bold">Pequeños sonidos al palomear, abonar o girar la ruleta, y vibración suave en el celular.</p>
+        <div class="row wrap mt" style="gap:8px"><label class="chip chip-btn"><input type="checkbox" data-change="toggleSnd" ${soundOn() ? 'checked' : ''}> 🔊 Sonidos</label><label class="chip chip-btn"><input type="checkbox" data-change="toggleHap" ${lsGet('nido-haptics') !== '0' ? 'checked' : ''}> 📳 Vibración</label><button class="btn sm ghost" data-act="welcome">👋 Ver la bienvenida otra vez</button></div></section>
       <section class="card deco mt"><div class="card-title"><h3>💾 Respaldo de la familia</h3></div>
         <p class="small muted bold">Descarga un <b>.zip</b> con todo: fotos del libro (por capítulo), recetas en texto y los datos de la app para restaurarlos si algún día hace falta. Guárdalo en tu compu, Drive o iCloud.</p>
         <div class="row wrap mt" style="gap:8px"><label class="chip chip-btn"><input type="checkbox" id="bk-full" checked> 📸 Fotos en alta calidad</label><label class="chip chip-btn"><input type="checkbox" id="bk-priv" checked> 🔒 Incluir mis datos privados</label></div>
@@ -72,6 +77,9 @@ export default {
       <p class="center tiny faint mt">Nido · hecho con ❤️ para la familia ${S.isDemo ? '· modo demo' : '· conectado a Firebase'}</p>`;
   },
   actions: {
+    toggleSnd(el) { if (el.checked !== soundOn()) toggleSound(); toast(el.checked ? '🔊 Sonidos activados' : '🔇 Sin sonidos'); },
+    toggleHap(el) { lsSet('nido-haptics', el.checked ? '1' : '0'); try { el.checked && navigator.vibrate && navigator.vibrate(30); } catch { } },
+    welcome() { openOnboarding(); },
     async backup(el) {
       const st = document.getElementById('bk-status'); el.disabled = true;
       try {

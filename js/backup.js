@@ -4,7 +4,7 @@ import { toast, isoDate, esc } from './ui.js';
 
 // Colecciones que se respaldan (las mismas que ve la app)
 export const BACKUP_COLS = ['members', 'events', 'exchanges', 'albums', 'photos', 'shopping', 'chores', 'expenses', 'messages', 'notes', 'inventory', 'backgrounds', 'rewards',
-  'recipes', 'capsules', 'polls', 'trips', 'challenges', 'pets', 'parties', 'wheels', 'spins', 'menus', 'bills'];
+  'recipes', 'capsules', 'polls', 'trips', 'challenges', 'pets', 'parties', 'wheels', 'spins', 'menus', 'bills', 'famgoals'];
 const PRIVATE_COLS = ['events', 'notes', 'accounts', 'txns', 'categories', 'budgets', 'goals'];
 
 // ---------------- ZIP (sin librerías) ----------------

@@ -266,6 +266,20 @@ export function seedDemo() {
           b5: { title: 'Regalo de aniversario para mis papás', category: 'regalo', total: 1800, date: iso(plus(-12)), to: 'm1', split: 'partes', inputs: { m1: 1, m4: 1, m5: 1 }, shares: { m1: 600, m4: 600, m5: 600 }, plan: { freq: 'unico', n: 1, start: iso(plus(-5)) }, notes: '', by: 'm1', payments: [] }
         };
       })(),
+      famgoals: (() => {
+        const Y = new Date().getFullYear(); const back = (d) => iso(plus(-d));
+        const c = (by, amount, d, note = '') => ({ id: 'c' + Math.random().toString(36).slice(2, 7), by, amount, date: back(d), note, at: now - d * 864e5 });
+        return {
+          fg1: { name: 'Nuestro carro familiar', type: 'auto', emoji: '🚗', target: 180000, initial: 25000, deadline: `${Y + 2}-06-30`, people: ['m1', 'm2', 'm3'], photo: '', by: 'm3', createdAt: now - 200 * 864e5,
+            contribs: [c('m3', 5000, 180), c('m2', 3000, 150), c('m1', 4000, 120, 'Parte del aguinaldo'), c('m3', 5000, 90), c('m2', 3000, 60), c('m1', 2500, 45), c('m3', 5000, 30), c('m1', 2500, 14), c('m2', 3000, 8)] },
+          fg2: { name: 'Enganche de la casa propia', type: 'enganche', emoji: '🏡', target: 450000, initial: 60000, deadline: `${Y + 5}-12-31`, people: ['m1', 'm2', 'm3'], photo: '', by: 'm2', createdAt: now - 400 * 864e5,
+            contribs: [c('m2', 10000, 300), c('m3', 10000, 200), c('m1', 6000, 100), c('m2', 8000, 40), c('m3', 8000, 20)] },
+          fg3: { name: 'Vacaciones en la playa', type: 'viaje', emoji: '🏖️', target: 36000, initial: 0, deadline: iso(plus(200)), people: ['m1', 'm2', 'm3', 'm4'], photo: '', by: 'm1', createdAt: now - 70 * 864e5,
+            contribs: [c('m1', 3000, 60), c('m2', 2500, 45), c('m4', 500, 40, 'Mis domingos 💪'), c('m3', 3000, 30), c('m1', 2000, 15)] },
+          fg4: { name: 'Pantalla nueva para la sala', type: 'tecnologia', emoji: '📺', target: 12000, initial: 4000, deadline: iso(plus(-10)), people: ['m1', 'm3'], by: 'm1', createdAt: now - 120 * 864e5, achievedAt: now - 12 * 864e5,
+            contribs: [c('m1', 4000, 80), c('m3', 4000, 12)] }
+        };
+      })(),
       rewards: {
         r1: { title: 'Elegir la película del viernes', cost: 50, emoji: '🎬' },
         r2: { title: '30 min extra de videojuegos', cost: 80, emoji: '🎮' },

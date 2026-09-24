@@ -196,7 +196,7 @@ export const exchangeDetail = {
     } else {
       center = `<section class="card deco center">
         ${!iAmIn ? `<div style="font-size:50px">👀</div><p class="bold">No participas en este intercambio, pero puedes ver las listas de deseos.</p>` :
-          !mine ? `<div style="font-size:50px">⏳</div><p class="bold">Cargando tu amigo secreto…</p>` :
+          !mine ? `<div class="skel" style="width:120px;height:120px;border-radius:50%;margin:10px auto"></div><div class="skel" style="width:60%;margin:10px auto"></div>` :
             revealed[id] ? `<div class="reveal-name">${avatar(recv, 'xl')}<div class="small bold muted">Te tocó regalarle a</div><h2>${esc(recv?.name || '?')}</h2>
               <p class="muted bold">¡Shhh! 🤫 Es un secreto${x.budget ? ` · Presupuesto ${money(x.budget)}` : ''}</p>
               <button class="btn sm mt" data-act="hide" data-id="${id}">🙈 Ocultar</button></div>`

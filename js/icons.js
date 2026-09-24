@@ -1,0 +1,35 @@
+// 🎨 Íconos propios de Nido (trazo redondeado + relleno suave del color de la temporada)
+const P = {
+  inicio: '<path class="f" d="M5 11l7-6 7 6v8a1 1 0 0 1-1 1h-4v-5h-4v5H6a1 1 0 0 1-1-1z"/><path d="M3 12l9-8 9 8M5 10.5V19a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-8.5"/>',
+  agenda: '<rect class="f" x="3.5" y="5" width="17" height="15" rx="3"/><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/><circle cx="8.5" cy="14.5" r="1.2" class="d"/><circle cx="12" cy="14.5" r="1.2" class="d"/>',
+  intercambios: '<rect class="f" x="4" y="10" width="16" height="10" rx="2"/><path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13"/><path d="M12 7c-2-4-6-3.5-5.5-1S12 7 12 7zm0 0c2-4 6-3.5 5.5-1S12 7 12 7z"/>',
+  fotos: '<path class="f" d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v16H5.5A1.5 1.5 0 0 1 4 18.5z"/><path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-14c-3-.5-6 0-8 1.5zM12 6v14"/>',
+  chat: '<path class="f" d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-5 4v-4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z"/><path d="M5 5h14a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H10l-5 4v-4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zM8 10h8M8 13h5"/>',
+  fiestas: '<path class="f" d="M4 20l5-13 8 8z"/><path d="M4 20l5-13 8 8zM7.5 11.5l5 5M14 3l1 2M19 5l-2 1.5M20 11h-2M12 7c1-1 1-3 2-3"/>',
+  encuestas: '<rect class="f" x="4" y="4" width="16" height="16" rx="3"/><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 16v-3M12 16V8M16 16v-6"/>',
+  ruleta: '<circle class="f" cx="12" cy="13" r="8"/><circle cx="12" cy="13" r="8"/><path d="M12 5v16M4 13h16M6.4 7.4l11.2 11.2M17.6 7.4L6.4 18.6"/><path d="M10 2.5h4L12 5z" class="d"/>',
+  retos: '<path class="f" d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 4h8v5a4 4 0 0 1-8 0zM8 6H5v1a3 3 0 0 0 3 3M16 6h3v1a3 3 0 0 1-3 3M12 13v3M9 20h6M10 16h4v4h-4z"/>',
+  viajes: '<path class="f" d="M3 13l18-7-5 14-3.5-5.5z"/><path d="M3 13l18-7-5 14-3.5-5.5zM12.5 14.5L21 6"/>',
+  recetas: '<path class="f" d="M4 12h16a8 8 0 0 1-16 0z"/><path d="M3 12h18M4 12a8 8 0 0 0 16 0M9 8c0-1.5 1-2 1-3.5M13 8c0-1.5 1-2 1-3.5M9 20h6"/>',
+  capsula: '<path class="f" d="M7 4h10v3l-4 5 4 5v3H7v-3l4-5-4-5z"/><path d="M6 3h12M6 21h12M7 3v4l4 5-4 5v4M17 3v4l-4 5 4 5v4"/>',
+  arbol: '<circle class="f" cx="12" cy="9" r="6"/><circle cx="12" cy="9" r="6"/><path d="M12 15v6M9 21h6M12 12l-2.5-2M12 11l2.5-2"/>',
+  ubicacion: '<path class="f" d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  menu: '<circle class="f" cx="12" cy="13" r="6.5"/><circle cx="12" cy="13" r="6.5"/><circle cx="12" cy="13" r="3.2"/><path d="M2.5 4v5a2 2 0 0 0 2 2M4.5 4v16M21 4c-1.5 0-2.5 2-2.5 5v2H21V4zM21 11v9"/>',
+  listas: '<path class="f" d="M6 7h14l-2 8H8z"/><path d="M3 4h2l2.5 11h10.5l2-8H6.2M9.5 19.5a1 1 0 1 0 0 .01M17 19.5a1 1 0 1 0 0 .01"/>',
+  tareas: '<path class="f" d="M5 20l3-9h8l3 9z"/><path d="M12 3v8M7 11h10l3 9H4zM9 20l.5-4M15 20l-.5-4M12 20v-4"/>',
+  mascotas: '<ellipse class="f" cx="12" cy="16" rx="4.5" ry="3.5"/><ellipse cx="12" cy="16" rx="4.5" ry="3.5"/><circle cx="6" cy="10.5" r="2"/><circle cx="18" cy="10.5" r="2"/><circle cx="9.3" cy="6" r="2"/><circle cx="14.7" cy="6" r="2"/>',
+  dinero: '<rect class="f" x="3" y="6" width="18" height="12" rx="2.5"/><rect x="3" y="6" width="18" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.8"/><path d="M6.5 9.5v.01M17.5 14.5v.01"/>',
+  cuentas: '<path class="f" d="M3 12l4-4 5 3 5-3 4 4-5 6-4-2-4 2z"/><path d="M3 11.5l4-4.5 4 2.5M21 11.5L17 7l-6 3.5 2.5 2 3-1.5M7 7l-4 4.5 5 5.5 2-1.5M12.5 12.5l3 3M11 14l2.5 2.5M9.5 15.5l1.8 1.8"/>',
+  metas: '<circle class="f" cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" class="d"/><path d="M12 12l7-7M16.5 3.5L19 5l1.5 2.5"/>',
+  notas: '<path class="f" d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M6 3h9l4 4v13a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1zM15 3v4h4M8.5 12h7M8.5 16h5"/>',
+  donde: '<circle class="f" cx="10.5" cy="10.5" r="6"/><circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/>',
+  familia: '<circle class="f" cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="3"/><circle cx="16.5" cy="9" r="2.5"/><path d="M2.5 20c0-3.3 2.5-6 5.5-6s5.5 2.7 5.5 6M13.5 16.2c.8-1.3 1.9-2.2 3-2.2 2.5 0 4.5 2.4 4.5 5.5"/>',
+  ajustes: '<circle class="f" cx="12" cy="12" r="3.5"/><circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18.7 5.3l-2.1 2.1M7.4 16.6l-2.1 2.1M18.7 18.7l-2.1-2.1M7.4 7.4L5.3 5.3"/>',
+  mas: '<rect class="f" x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="4" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="2"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="2"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="2"/>',
+  buscar: '<circle cx="10.5" cy="10.5" r="6"/><path d="M15 15l5.5 5.5"/>',
+  mas_add: '<path d="M12 5v14M5 12h14"/>',
+  campana: '<path class="f" d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15z"/><path d="M6 16V11a6 6 0 0 1 12 0v5l1.5 2h-15zM10 21h4"/>',
+  resumen: '<path class="f" d="M12 3l2.4 5.2 5.6.6-4.2 3.8 1.2 5.6L12 15.4 7 18.2l1.2-5.6L4 8.8l5.6-.6z"/><path d="M12 3l2.4 5.2 5.6.6-4.2 3.8 1.2 5.6L12 15.4 7 18.2l1.2-5.6L4 8.8l5.6-.6z"/>'
+};
+export const icon = (name, cls = '') => P[name] ? `<svg class="ico-svg ${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[name]}</svg>` : '';
+export const hasIcon = (name) => !!P[name];

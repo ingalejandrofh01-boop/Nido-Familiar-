@@ -20,7 +20,7 @@ export const shopping = {
           <input class="input grow" id="shop-input" name="text" placeholder="¿Qué hace falta? Ej. leche, huevos…" autocomplete="off">
           <button class="btn primary">Agregar</button></form>
         <div class="small bold muted" style="margin-bottom:8px">${pending} pendiente${pending === 1 ? '' : 's'}</div>
-        <div class="list">${vis.map(i => `<div class="item">
+        <div class="list">${vis.map(i => `<div class="item swipe" data-sr="toggle" data-sl="del" data-id="${i.id}">
           <span class="check ${i.done ? 'on' : ''}" data-act="toggle" data-id="${i.id}">${i.done ? '✓' : ''}</span>
           <div class="grow"><div class="bold ${i.done ? 'done-text' : ''}">${esc(i.text)}</div><div class="tiny muted">${esc(i.list || 'Súper')}${member(i.by) ? ' · ' + esc(member(i.by).name) : ''}</div></div>
           <button class="link tiny" data-act="del" data-id="${i.id}">✕</button></div>`).join('') || '<div class="empty"><div class="big">🎉</div>¡No falta nada!</div>'}</div>
@@ -36,7 +36,7 @@ export const shopping = {
         await S.db.add('shopping', { text: t, list: shopList === 'Todas' ? 'Súper' : shopList, done: false, by: S.me.id });
       document.getElementById('shop-input')?.focus();
     },
-    toggle(el) { const i = S.data.shopping.find(x => x.id === el.dataset.id); S.db.update('shopping', i.id, { done: !i.done }); },
+    toggle(el) { const i = S.data.shopping.find(x => x.id === el.dataset.id); S.db.update('shopping', i.id, { done: !i.done, doneAt: !i.done ? Date.now() : 0, doneBy: !i.done ? S.me.id : '' }); },
     del(el) { S.db.remove('shopping', el.dataset.id); },
     async clearDone() { for (const i of S.data.shopping.filter(i => i.done)) await S.db.remove('shopping', i.id); toast('🧹 Listo'); }
   }
@@ -70,7 +70,7 @@ export const chores = {
     const todayL = list.filter(c => (c.due || t) <= t), later = list.filter(c => (c.due || t) > t);
     const board = members().sort((a, b) => (b.points || 0) - (a.points || 0));
     const rewards = S.data.rewards || [];
-    const row = c => { const m = member(c.assignee); return `<div class="item">
+    const row = c => { const m = member(c.assignee); return `<div class="item swipe" data-sr="toggle" data-id="${c.id}">
       <span class="check ${c.done ? 'on' : ''}" data-act="toggle" data-id="${c.id}">${c.done ? '✓' : ''}</span>
       <div class="grow clickable" style="cursor:pointer" data-act="edit" data-id="${c.id}"><div class="bold ${c.done ? 'done-text' : ''}">${esc(c.title)}</div>
       <div class="tiny muted">${c.due ? (c.due < t && !c.done ? '⚠️ Atrasada · ' : '') + relDay(c.due) : ''}${c.repeat && c.repeat !== 'none' ? ' · 🔁 ' + REP[c.repeat] : ''}</div></div>
@@ -108,11 +108,11 @@ export const chores = {
       if (!c.done && c.repeat && c.repeat !== 'none') {
         const d = parseDate(c.due || isoDate()); const base = d < today0() ? today0() : d; base.setDate(base.getDate() + (c.repeat === 'daily' ? 1 : 7));
         await S.db.update('chores', c.id, { due: isoDate(base), lastDone: isoDate() });
-        if (m) await S.db.update('members', m.id, { points: (m.points || 0) + pts });
+        if (m) { const Y = new Date().getFullYear(); await S.db.update('members', m.id, { points: (m.points || 0) + pts, [`stats.${Y}.chores`]: ((m.stats || {})[Y]?.chores || 0) + 1 }); }
         toast(`🎉 +${pts} pts para ${m?.name || ''}. Próxima: ${relDay(isoDate(base))}`);
       } else {
-        await S.db.update('chores', c.id, { done: !c.done });
-        if (m) await S.db.update('members', m.id, { points: Math.max(0, (m.points || 0) + (c.done ? -pts : pts)) });
+        await S.db.update('chores', c.id, { done: !c.done, doneAt: !c.done ? Date.now() : 0, doneBy: !c.done ? S.me.id : '' });
+        if (m) { const Y = new Date().getFullYear(); await S.db.update('members', m.id, { points: Math.max(0, (m.points || 0) + (c.done ? -pts : pts)), [`stats.${Y}.chores`]: Math.max(0, ((m.stats || {})[Y]?.chores || 0) + (c.done ? -1 : 1)) }); }
         if (!c.done) { const r = el.getBoundingClientRect(); hooks.celebrate(r.left + 10, r.top + 10, 'confetti'); toast(`🎉 +${pts} pts para ${m?.name || ''}`); }
       }
     },
