@@ -1,72 +1,19 @@
 {
-  "name": "Nido · App familiar",
-  "short_name": "Nido",
-  "description": "Intercambios, cumpleaños, agenda, libro de fotos y más para la familia.",
-  "start_url": "./?source=pwa",
+  "name": "Laboratorio HV México",
+  "short_name": "Lab HV México",
+  "description": "Certificación de autenticidad y estado de Hot Wheels Vintage, CIPSA, Bólidos Lilí Ledy y Aurimat en CDMX.",
+  "start_url": "./",
   "scope": "./",
+  "id": "./",
   "display": "standalone",
-  "orientation": "portrait",
-  "background_color": "#0b1026",
-  "theme_color": "#0b1026",
+  "orientation": "portrait-primary",
+  "background_color": "#FBF6EF",
+  "theme_color": "#D2042D",
   "lang": "es-MX",
   "icons": [
-    {
-      "src": "icons/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
-  ],
-  "id": "./?app=nido-familiar",
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
-  "categories": [
-    "lifestyle",
-    "social",
-    "productivity"
-  ],
-  "shortcuts": [
-    {
-      "name": "Intercambios",
-      "url": "./#/intercambios",
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Mis finanzas",
-      "url": "./#/dinero",
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Chat familiar",
-      "url": "./#/chat",
-      "icons": [
-        {
-          "src": "icons/icon-192.png",
-          "sizes": "192x192"
-        }
-      ]
-    }
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }
