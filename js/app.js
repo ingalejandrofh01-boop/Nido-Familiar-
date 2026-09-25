@@ -52,6 +52,7 @@ import { ensureRecurring, agendaRows, quincena } from './debts.js';
 import { unreadDMs } from './views/dm.js';
 import { initSync, syncPill, syncInfo, paint as paintSync } from './sync.js';
 import * as guest from './guest.js';
+import guia, { injectInfo, sectionInfo, setRerender as setGuideRerender } from './views/guide.js';
 import { alertLocal } from './notifications.js';
 
 const ROUTES = {
@@ -59,7 +60,7 @@ const ROUTES = {
   fotos: photosHome, album: albumView, libro: bookView, listas: shopping, tareas: chores,
   dinero, chat, notas: notes, donde, familia, perfil, ajustes, mas, avatar: avatarEditor,
   recetas: recipesView, receta: recipeDetail, capsula, arbol, encuestas, viajes: tripsList, viaje: tripDetail, retos, ubicacion, dm: dmView, mascotas: petsList, mascota: petDetail, fiestas: partiesList, fiesta: partyDetail, ruleta, menu: menuView, cuentas: billsView, cuenta: billDetail, metas: goalsView, meta: goalDetail, resumen: wrappedView, documentos: docsView, mapa: memMap,
-  invitado: guest.guestHome,
+  invitado: guest.guestHome, guia,
   tesoro: { render: (p) => p[0] ? huntDetail.render(p) : huntsList.render(), after: (r, p) => { if (p[0]) huntDetail.after(r, p); }, actions: { ...huntsList.actions, ...huntDetail.actions } }
 };
 export const NAV = [
@@ -208,6 +209,7 @@ function shell() {
         <div class="side-sync">${syncPill()}</div>
         ${nav.map(n => n.sep ? `<div class="nav-sep"></div><div class="nav-group">${n.sep}</div>` : `<a class="nav-link" data-r="${n.r}" href="#/${n.r}"><span class="ico">${icon(n.r) || n.ico}</span>${n.t}<b class="tab-badge side" data-tb="${n.r}" hidden></b></a>`).join('')}
         ${(S.guestOf || []).length ? `<div class="nav-sep"></div><a class="nav-link" data-act="goGuest" href="#/inicio"><span class="ico">🎟️</span>Invitaciones de otras familias</a>` : ''}
+        <a class="guide-link" data-r="guia" href="#/guia">📖 ¿Qué hay en Nido y para qué sirve?</a>
       </aside>
       <main class="main" id="view"></main>
     </div>
@@ -247,12 +249,14 @@ function render() {
   try { view.innerHTML = V.render(params); }
   catch (e) { console.error(e); view.innerHTML = `<div class="card empty"><div class="big">😵</div>Algo salió mal al mostrar esta sección.<br><small class="faint">${esc(e.message)}</small></div>`; }
   if (keep) { const el = document.getElementById(keep.id); if (el) { el.value = keep.v; el.focus(); try { el.setSelectionRange(keep.s, keep.e); } catch { } } }
+  injectInfo(view, name);
   V.after && V.after(view, params);
   animateView(view, routeChanged); routeChanged = false;
   if (name === 'chat') { try { localStorage.setItem('nido-chat-seen', String(Date.now())); } catch { } }
   if (S.guest) paintGuestNav(); else { updateTabBadges(); notifCenter.updateBadges(); }
   const me = document.querySelector('.mtop-me'); if (me && S.me) me.innerHTML = avatar(S.me, 'sm');
 }
+setTimeout(() => setGuideRerender(() => hooks.rerender()));
 hooks.rerender = () => { if (renderQueued) return; renderQueued = true; requestAnimationFrame(() => { renderQueued = false; render(); }); };
 
 function onRoute() {
@@ -286,7 +290,8 @@ const globalActions = {
   invite: (el) => guest.openInvite(el.dataset.col, el.dataset.id),
   inviteImage: async (el) => { const m = await import('./invitecard.js'); m.openInviteImage(el.dataset.col, el.dataset.id); },
   addCal: (el) => { const x = (S.data[el.dataset.col] || []).find(d => d.id === el.dataset.id); if (x) guest.addToCalendar(el.dataset.col, x); },
-  remindSent: (el) => guest.markReminder(el)
+  remindSent: (el) => guest.markReminder(el),
+  sectionInfo: (el) => sectionInfo(el.dataset.r)
 };
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-act]'); if (!el) return;
